@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code local settings (per-machine, not for the repo)
+.claude/
+
+# Node, in case anyone adds tooling later
+node_modules/
