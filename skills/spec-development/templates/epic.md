@@ -384,6 +384,12 @@ Steps a human runs before approving the epic as done.
 - [ ] Accessibility pass (keyboard-only + screen reader)
 - [ ] Responsive check across device targets
 
+### 18.5 Verification rigour gate (per task)
+
+Every task in this spec is held to the universal verification-rigour rules in `SKILL.md` § "Verification rigour" PLUS the spec-specific surfaces in [`verification-checklist.md`](./verification-checklist.md). The agent's hand-off summary uses the §8 template from that file. MANDATORY items cannot be skipped silently.
+
+If this spec touches surfaces not yet covered by the universal floor (specific localised content, object-storage round-trips, numerical assertions, multi-region behaviour, etc.), add them as §10+ in `verification-checklist.md`.
+
 ---
 
 ## 19. Rollout plan

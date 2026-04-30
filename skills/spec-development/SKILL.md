@@ -52,8 +52,9 @@ If the user asks to skip ahead ("just make the task list for this half-drafted e
 2. Ask the user for a short slug (kebab-case, e.g. `student-intake`).
 3. Create `docs/specs/SPEC-{NNN}-{slug}/`.
 4. Copy `templates/epic.md` into the new directory as `epic.md`.
-5. Fill the Meta section (ID, title, `status=draft`, dates, owner).
-6. Work with the user section by section. Do not auto-fill everything — the epic is a design conversation, not a dump.
+5. Copy `templates/verification-checklist.md` into the new directory as `verification-checklist.md` — universal floor goes in immediately, project-/spec-specific surfaces (§10+) get filled as the epic takes shape.
+6. Fill the Meta section (ID, title, `status=draft`, dates, owner).
+7. Work with the user section by section. Do not auto-fill everything — the epic is a design conversation, not a dump.
 
 ### When the user asks for tasks
 
@@ -230,6 +231,25 @@ Tests inside each task carry four sub-sections:
 3. **Additional scenarios (filled during implementation)** — the executing agent appends edge cases it discovered. This grows as implementation progresses and becomes part of the task artefact.
 4. **Manual verification (run at task end)** — only items automation cannot reliably cover (visual polish, screen-reader flow, device-specific feel). Empty is a good outcome.
 
+### Verification rigour — anti-hand-wave rules
+
+Past specs in many projects have shipped with "green tests" that proved mechanics, not behaviour — agents claim a task done because their tests went green, but the tests didn't actually verify the user-facing or persisted-state outcome the spec promised. The rules below are a universal floor against this failure mode. Each rule has been the source of a real bug-after-merge in some past project; they are not academic.
+
+Apply to **every task**, regardless of language / framework / spec scope. Specs MUST author a `verification-checklist.md` in their directory (see template + workflow below) that quotes these rules verbatim and extends them with project-/spec-specific surfaces.
+
+1. **Persistence asserted by storage query, not by helper-call inspection.** When a task says "X is recorded / written / inserted", the test queries the underlying store (`SELECT … FROM <table> WHERE …`, equivalent NoSQL get, file-existence check) and asserts presence + key fields. Calling the helper that *would* write does not count. The most common false positive: helper returned nil, the row was never created.
+2. **State-machine transitions asserted by post-condition row read.** When status changes, the test reads the row back and asserts the new status. "The handler returned 200" is necessary but not sufficient — the handler can return 200 from a code path that skipped the write.
+3. **Audit-row existence asserted by storage grep, not by code path.** When a task claims to write an audit-log row, the test queries the audit storage and asserts the actor / entity / action / reason fields match the input verbatim. The audit-helper returning nil is not sufficient.
+4. **Concurrency races asserted by post-condition row count.** When you claim "second concurrent write returns 409", the test runs N parallel writers (real goroutines / async tasks, not sequential calls) and asserts the resulting row count = 1 (only winner left a row). Sequential calls do not test concurrency.
+5. **Negative tests as first-class.** Every guard, validator, or rule has both a positive case (fires/passes correctly) AND a negative case (does NOT fire/pass on a clean input). Half-tested guards rubber-stamp.
+6. **Content assertions, not shape assertions.** A test that asserts "an item came back with N fields and an integer id" is necessary but NOT sufficient. Add at least one *content-shaped* property: text length > N chars, no placeholder strings (`Lorem ipsum`, `TODO`, `Step N`), no raw markdown fences in JSON output, mandatory non-empty strings. Catch the case where the shape is right but the content is junk.
+7. **Browser walkthrough for every UI surface.** Hand-off bar = green tests + live dev env up + pages personally clicked. If the executing agent cannot run a browser, surface this explicitly in the hand-off as `could not verify UX in env — needs eyeball by user on <route>`. Do NOT silently mark complete. Per project memory in many repos: green tests prove mechanics, not UX.
+8. **Computed style / DOM state asserted, not just className.** When you claim a UI behaviour ("renders right-to-left", "is disabled"), the test asserts `getComputedStyle(el).<prop>` (or framework equivalent: `aria-disabled`, `dataset.state`), not just `el.classList.contains('rtl-class')`. Utility-CSS frameworks (Tailwind, etc.) can fail to apply silently — the class is on the element but the style is not.
+9. **E2E adversarial pinning + flip variant.** Per project memory in many repos: Playwright headless defaults differ from real Chrome on `locale`, `timezoneId`, `Accept-Language`. Pin these to a representative real user in the runner config. Add at least one variant that *flips* the signal (e.g., `Accept-Language: he-IL` against an EN-default deployment) to verify the deployment default still holds.
+10. **Image / external-resource render asserted, not just fetched.** "200 OK on an image fetch" is necessary but not sufficient. The test asserts `image.naturalWidth > 0` after load (or the equivalent runtime confirmation that the bytes were valid). A 200 OK with corrupt bytes would pass an HTTP-status check but fail this — that's the whole point.
+11. **No mocked-only verification on tasks where the external API IS the unit under test.** Mocked tests prove plumbing, not behaviour. When the spec involves an external API (LLM provider, payment processor, third-party identity, etc.) AS the unit being verified, hand-off requires at least one real-stack run against real dependencies before the spec is closed (typically a `live-smoke` task gates this). Mocked-only verification does NOT close such tasks.
+12. **Done means another engineer can reproduce the green state from scratch.** Hand-off includes the exact command sequence (commit hash, branch, env) and expected output. "It works on my machine" never closes a task.
+
 ### Definition of Done (global — applies to every task)
 
 A task may be marked `completed` only when:
@@ -240,6 +260,7 @@ A task may be marked `completed` only when:
 - [ ] Additional scenarios documented in the task file
 - [ ] Internationalisation keys exist for all languages the project supports (if task touches UI text)
 - [ ] Accessibility audit passes for surfaces the task touches (if UI)
+- [ ] **Verification rigour rules above applied** — every relevant rule from §"Verification rigour" has either been satisfied in tests, or explicitly waived with a one-line reason in the hand-off summary. Walk through the spec's `verification-checklist.md` end-to-end before marking complete; MANDATORY items cannot be skipped silently.
 - [ ] For UI tasks: executing agent has walked the affected surface in a real browser (screenshot / trace / live walkthrough) — automated green is about mechanics, not UX. If the agent cannot verify the UX in its environment, it must flag this explicitly at hand-off so the user knows to eyeball it.
 - [ ] For features that read request headers, locale, timezone, or browser-provided signals: an adversarial test exists that flips the signal and asserts the deployment default still holds (green headless runs do not prove default-locale / default-region / default-tz behaviour).
 - [ ] **Adjacent configs still agree with this task's architectural decisions** — when a task changes an integration boundary (auth model, storage layer, emulator→real, new service, port, env-var name), walk the adjacent configs that encode the SAME decision and update them in the same PR. Typical list: `.github/workflows/*.yml`, `Makefile`, `docker-compose*.yml`, `.env.example` / per-service example envs, `README.md` setup sections, dev scripts under `scripts/`. Grep for the old name / old service / old env-var — if any config mentions it, fix it here, not in a follow-up.
@@ -248,17 +269,39 @@ A task may be marked `completed` only when:
 
 ### Task-agent completion hand-off
 
-At task end, the executing agent MUST output a short completion summary to the user containing:
+At task end, the executing agent MUST output a structured completion summary using the template in §"Hand-off summary template" of `templates/verification-checklist.md`. Required slots:
 
-1. What changed (high-level, one paragraph)
-2. Files touched (paths)
-3. Tests added / modified
-4. **UX verification status** (UI tasks only): "verified in browser on routes X, Y, Z" OR "could not verify UX in this environment — please eyeball {specific surfaces}". Never silently skip. Automated-green is not UX-verified.
-5. **Manual verification checklist** — the full list from the task's Manual verification subsection, presented as a checklist the user can tick through
-6. Any Additional scenarios appended to the task file
-7. Any Open questions that emerged
+1. **What changed** (high-level, one paragraph)
+2. **Files touched** (paths)
+3. **Tests added / modified** (paths + what each asserts)
+4. **UX verification status** (UI tasks only): "verified in browser on routes X, Y, Z — screenshots at …" OR "could not verify UX in this environment — please eyeball {specific surfaces}". Never silently skip. Automated-green is not UX-verified.
+5. **Storage spot-checks done** — paste the actual queries / commands and their results, mapped to verification-rigour rules 1–4 above. "The audit row was written" is not enough; show the SELECT result.
+6. **Manual verification checklist** — the full list from the task's Manual verification subsection AND the spec-level checklist's MANDATORY items, presented as ticked / waived-with-reason items.
+7. **Additional scenarios** appended to the task file
+8. **Open questions / deviations** from the task spec
+9. **BUGs filed** (if any)
 
-This is non-negotiable. Do not let the user hunt through files for the manual checklist — surface it at hand-off.
+This is non-negotiable. Do not let the user hunt through files for the checklist — surface it at hand-off. Empty / missing slots = task is not complete.
+
+### Per-spec verification checklist
+
+Every spec MUST author a `verification-checklist.md` in its directory (alongside `epic.md` / `tasks.md` / `plan.md` for full-triplet, alongside `spec.md` for small-spec, alongside `hotfix.md` for hotfix). The checklist is the agent-facing single-page contract for hand-off; it quotes the universal rigour rules above and adds project-/spec-specific surfaces.
+
+**When to author:** the same time as the epic, before tasks.md. The author cannot enumerate spec-specific surfaces (e.g., "Hebrew Unicode guard", "S3 round-trip via mc", "IRT spread realism") until the epic exists, but the universal sections can be copied verbatim from the template.
+
+**Workflow:**
+
+1. Copy `templates/verification-checklist.md` → `docs/specs/SPEC-NNN-{slug}/verification-checklist.md` immediately after creating the directory.
+2. The universal sections (§0 Universal, §1–§7 surface families, §8 Hand-off template, §9 Orchestrator pre-merge gate) stay verbatim — they are the floor.
+3. Add a new section §10+ "Project / spec-specific surfaces" with checklist items for whatever the epic touches that the universal floor does not cover. Examples that have appeared in past specs:
+   - **Localised content** — assert specific Unicode codepoint ranges (e.g., `U+0590–U+05FF` for Hebrew) in expected fields.
+   - **Object storage** — round-trip via the storage CLI (`mc cp`, `aws s3 cp`) confirming uploaded bytes match what the worker thought it wrote; anonymous-bucket access denied; cross-permission probes (writer cannot read outside prefix; reader cannot write).
+   - **Numerical / scientific** — golden-curve fixtures with known expected outputs; spread / shape assertions against degenerate flat outputs.
+   - **External API as SUT** — mock-boundary prompt/payload capture verbatim; live smoke gate; provider attribution by SQL row read (not by mock-call inspection).
+   - **Multi-region behaviour** — pinning region in tests; flip-region adversarial variant.
+4. Tasks reference the checklist in their AC blocks where applicable. The orchestrator gates merges on the checklist's MANDATORY items.
+
+**For small-specs and hotfixes:** the checklist is recommended but not always required — judgement call by the author. A hotfix on a high-impact code path benefits from the checklist; a one-line typo fix does not. When in doubt, copy the template — it costs five minutes.
 
 ## Plan execution
 
@@ -398,18 +441,21 @@ A spec is NOT considered done if a skip-with-reference annotation in its diff po
 │   │   ├── SPEC-001-{slug}/         ← full triplet
 │   │   │   ├── epic.md
 │   │   │   ├── tasks.md
-│   │   │   └── plan.md
+│   │   │   ├── plan.md
+│   │   │   └── verification-checklist.md
 │   │   ├── SPEC-002-{slug}/         ← full triplet, >10 tasks
 │   │   │   ├── epic.md
 │   │   │   ├── tasks.md             ← index only
 │   │   │   ├── tasks/
 │   │   │   │   ├── T-001-{slug}.md
 │   │   │   │   └── T-002-{slug}.md
-│   │   │   └── plan.md
+│   │   │   ├── plan.md
+│   │   │   └── verification-checklist.md
 │   │   ├── SPEC-003-{slug}/         ← small spec (one file)
-│   │   │   └── spec.md
+│   │   │   ├── spec.md
+│   │   │   └── verification-checklist.md   ← optional but recommended
 │   │   └── HF-001-{slug}/           ← hotfix (one file)
-│   │       └── hotfix.md
+│   │       └── hotfix.md            ← verification-checklist.md optional
 │   └── bugs/                        ← created lazily on the first BUG
 │       ├── README.md                ← convention (from bugs-readme.md template)
 │       ├── _template.md             ← per-bug template (from bug.md template)
@@ -427,6 +473,7 @@ Create `docs/specs/` if it does not yet exist. All three spec shapes live in the
 - `templates/plan.md` — execution-plan template (full triplet).
 - `templates/small-spec.md` — one-file spec template.
 - `templates/hotfix.md` — one-file hotfix template.
+- `templates/verification-checklist.md` — per-spec agent-facing checklist (universal floor + project-specific extension slots). Copied into every spec directory.
 - `templates/bug.md` — per-bug report template (`docs/bugs/BUG-NNN-{slug}.md`).
 - `templates/bugs-readme.md` — `docs/bugs/README.md` template (numbering, severity, lifecycle, skip-with-reference convention, anti-pattern note).
 

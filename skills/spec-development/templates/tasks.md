@@ -177,6 +177,10 @@ Only steps automation cannot reliably cover. If empty, state `none — fully aut
 
 - [ ] ...
 
+##### Verification rigour gate
+
+Before marking the task complete, walk through the spec's [`verification-checklist.md`](../verification-checklist.md) end-to-end. The agent's hand-off summary uses the §8 template from that file. MANDATORY items cannot be skipped silently — they must be ticked, or explicitly waived with a one-line reason.
+
 #### References
 
 Links the agent needs to execute this task. Always include relevant epic sections; list any cross-task interfaces required.

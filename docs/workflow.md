@@ -70,9 +70,10 @@ What the skill does:
 1. Picks the next `SPEC-{NNN}` number from `docs/specs/`.
 2. Asks for a short kebab-case slug.
 3. Creates `docs/specs/SPEC-{NNN}-{slug}/` and copies the epic template.
-4. Walks the template **section by section** — not a dump. For each section it proposes a draft based on the Phase 1 conversation; you correct, refine, or reject.
-5. Skips sections that do not apply to this epic's scope (no `N/A — reason` placeholders).
-6. Leaves status = `draft` at the end.
+4. Copies the **verification-checklist** template into the same directory as `verification-checklist.md` — universal anti-hand-wave floor goes in immediately; spec-/project-specific surfaces (§10+) get filled as the epic takes shape.
+5. Walks the epic template **section by section** — not a dump. For each section it proposes a draft based on the Phase 1 conversation; you correct, refine, or reject.
+6. Skips sections that do not apply to this epic's scope (no `N/A — reason` placeholders).
+7. Leaves status = `draft` at the end.
 
 The epic is a conversation, not a form. Expect back-and-forth.
 
@@ -298,6 +299,8 @@ Both are **Claude Code plugin commands** (`claude-code-plugins/code-review` in p
 
 #### E2E gate — operating rules
 
+> Universal verification rules (computed-style asserts not className, audit-row by SQL grep, image render asserted by `naturalWidth > 0`, locale/tz/Accept-Language pinning + adversarial flip variant, etc.) live in the skill — see `.claude/skills/spec-development/SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`. The rules below are **Pebble-specific E2E operating constraints** layered on top of the universal floor.
+
 The E2E gate exists so a wave merges only after the full surface still works end-to-end, including visual regression. It is a hard gate; if it fails, the wave does not merge.
 
 - **Runs against the isolated test stack only.** Ports `:3001` (web), `:18081` (API), `:55434` (Postgres), `:9099` (Firebase Auth Emulator). The user's dev stack on `:3000`/`:18080`/`:55432` is never touched. The orchestrator brings the test stack up before the gate, runs Playwright, and tears it down after.
@@ -327,6 +330,7 @@ Full rules are in `.claude/skills/spec-development/SKILL.md`. Highlights:
 - **Each task must be self-sufficient.** A task agent should not need to read sibling tasks to execute. When a cross-task dependency is unavoidable, the task quotes the interface in its References.
 - **Tests: core scenarios up-front, additional during implementation.** Core scenarios are written at task creation (3–5 flows mapped to acceptance criteria). Additional scenarios are appended by the executing agent as they discover edge cases. Manual verification is the exception — automate by default.
 - **Definition of Done applies globally** (types pass, linter clean, core tests green, additional scenarios documented, i18n covered, a11y passes, manual checklist confirmed, PR references task + epic).
+- **Verification rigour is enforced per task.** Every spec ships with a `verification-checklist.md` (alongside `epic.md`) carrying the 12 universal anti-hand-wave rules (persistence by storage query, audit-row by SQL grep, concurrency by post-condition row count, computed-style not className, image render asserted, etc.) plus project-/spec-specific surfaces. See `.claude/skills/spec-development/SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`.
 - **Wave-boundary merge.** Tasks in a wave branch from the same base; the wave merges as a unit after all tasks and automated reviews pass.
 - **Failure policy.** One task blocking mid-wave does not halt the wave. Dependent tasks defer to a later wave. If the blocker invalidates the epic, the orchestrator proposes a re-plan.
 
