@@ -67,6 +67,15 @@ Prose or structured. Describe purpose, inputs, outputs, errors. No handler imple
 
 - ...
 
+### Documentation impact
+
+List every documentation surface this change must update in the same PR. Fill at draft time. One line per entry: file path + reason. Refer to the project's CLAUDE.md for the area→section mapping. If nothing is touched (truly internal refactor with zero observable surface), state `none — fully internal change`.
+
+- `docs/architecture/0X-...` — {one-line reason}
+- `docs/architecture/README.md` — "As of" bump + entry
+- `docs/prod-readiness.md` — only if this introduces a pre-prod human step
+- `docs/future-work.md` — only if §9 cross-spec defers anything with intent to do later
+
 ## 7. Tests
 
 ### Strategy

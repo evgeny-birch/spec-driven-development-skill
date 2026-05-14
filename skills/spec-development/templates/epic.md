@@ -212,6 +212,20 @@ For each layer touched: technology + rationale. Flag deviations from the project
 
 Why these choices, what was rejected, what the tradeoff is.
 
+### 11.4 Documentation impact
+
+List every documentation surface this epic must update **in the same PR (or in a clearly named follow-up PR opened within the same merge window)**. Fill at draft time, not after — forgetting a section is how architecture docs drift from code. Refer to the project's CLAUDE.md for the area→section mapping.
+
+| Doc | Why this epic touches it | Updated |
+|---|---|---|
+| `docs/architecture/0X-...` | new endpoint / table / flow step / env var / port / audit action | [ ] |
+| `docs/architecture/README.md` | "As of" bump + one-line entry summarising the epic | [ ] |
+| `docs/prod-readiness.md` | new pre-prod human step (console setting, DNS, partner review, SA provisioning) | [ ] |
+| `docs/future-work.md` | each item §21 out-of-scopes with clear intent to do later | [ ] |
+| user-facing README / CHANGELOG | only if a behaviour change is visible to external consumers | [ ] |
+
+If an entry above genuinely doesn't apply, delete the row — do not leave `N/A` placeholders.
+
 ---
 
 ## 12. Algorithms & business logic

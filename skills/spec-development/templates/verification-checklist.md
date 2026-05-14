@@ -191,6 +191,7 @@ These run *after* the agent's hand-off, before the wave is merged:
 - [ ] Security-review executed if the wave touches sensitive paths (auth, data, PII / PHI, payments, secrets).
 - [ ] CI green on the merged wave branch.
 - [ ] No new type errors or lint warnings introduced.
+- [ ] **Documentation impact section filled and every entry checked off.** Each spec / hotfix carries a Documentation impact list (epic.md §11.4 / small-spec.md §6 / hotfix.md §5b). Confirm the list was filled at draft time AND every listed doc is updated in this PR. Sweep the existing docs for stale claims about the changed behaviour — grep symptom keywords (endpoint paths, key names, status codes, env vars) and update sequence diagrams / failure-mode tables that encode the OLD behaviour. Partial doc updates are how the architecture rots.
 
 When all task agents in a wave hand off green AND these orchestrator gates pass, the wave merges into the integration branch and the next wave starts.
 

@@ -55,6 +55,19 @@ Files changed, one line per file. The commit reference lands below in §6.
 |---|---|
 | `path/to/file` | ... |
 
+## 5b. Documentation impact
+
+Every architecture / project doc this hotfix touches goes here BEFORE the commit, not after. Enumerate up-front so partial doc coverage can't slip through. Refer to the project's CLAUDE.md for the area→section mapping. If the hotfix is purely an internal mechanism with no doc surface, state `none — internal mechanism only`.
+
+| Doc | Why HF-{NNN} touches it | Updated |
+|---|---|---|
+| `docs/architecture/0X-...` | {reason: behaviour change in this subsystem; specific lines that became wrong} | [ ] |
+| `docs/architecture/README.md` | "As of" bump + one-line HF entry at the top of the intro paragraph | [ ] |
+| `docs/prod-readiness.md` | only if the fix introduces a new pre-prod gate (rare for hotfixes) | [ ] |
+| `docs/future-work.md` | only if §8 defers something with `Source: HF-{NNN}` | [ ] |
+
+Sweep the existing docs for stale claims about the broken behaviour — grep for the symptom keywords (e.g. job_id, key name, endpoint path). Failure modes tables and sequence diagrams routinely encode the OLD behaviour and become misleading after the fix.
+
 ## 6. Regression guard
 
 Test added so this can't recur silently.
