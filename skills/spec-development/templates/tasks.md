@@ -38,6 +38,7 @@ Legend: `type` ∈ { feature, refactor, test, research, bugfix, infra, docs }. `
 |---|---|
 | Type | feature / refactor / test / research / bugfix / infra / docs |
 | Size | S / M / L |
+| Risk | low / medium / high — **optional** (v1.0). Steers spot-check review; absent ⇒ treated as `medium`. |
 | Status | not-started / in-progress / completed |
 | Languages | TS / Go / Python / SQL / … |
 | Scope paths | `apps/web/src/features/…`, `packages/contracts/…` |
@@ -136,7 +137,7 @@ What the task produces. Files, endpoints, UI surfaces, migrations, generated art
 
 #### Acceptance criteria
 
-Testable conditions. Given-When-Then when the flow is behavioural; plain checklist when structural.
+Testable conditions. Given-When-Then when the flow is behavioural; plain checklist when structural. When adversarial review is enabled (v1.0), this section + the `Risk` field are the ground truth handed to the reviewer; if this section is absent the reviewer falls back to the epic / `spec.md`.
 
 - **AC-1** — Given {state}, when {action}, then {observable outcome}
 - **AC-2** — ...

@@ -12,3 +12,6 @@
 
 # Node, in case anyone adds tooling later
 node_modules/
+
+# Local spec/planning artifacts — not for the public skill repo
+docs/specs/

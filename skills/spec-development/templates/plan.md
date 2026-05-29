@@ -17,10 +17,24 @@
 | Parent epic | [SPEC-{NNN}: {title}](./epic.md) |
 | Tasks source | [tasks.md](./tasks.md) |
 | Status | `not-started` / `in-progress` / `completed` / `blocked` |
-| Concurrency cap | 3 (default; raise only with explicit user approval) |
-| Execution mode | `auto` / `paused-between-waves` — **ask user at Wave 1 kickoff** |
 | Created | YYYY-MM-DD |
 | Last updated | YYYY-MM-DD |
+
+### Execution preferences (v1.0 — all optional; absent ⇒ default ⇒ pre-1.0 behaviour)
+
+These rows configure execution. **All optional.** A `plan.md` with none of them executes exactly as pre-1.0. The agent resolves them by precedence: invoke flag → these rows → project `CLAUDE.md` defaults → skill defaults. Strictness is concentrated on the safety rows (`Engine`, `Review *`, `Compliance critical`): on an unrecognised value the agent stops and asks — it does not guess.
+
+| Field | Value (accepted — default) |
+|---|---|
+| Engine | `auto` / `task-tool` / `dw` — default `task-tool` |
+| Stop mode | `auto` / `per-wave` / `per-task` — default `per-wave`. Subsumes pre-1.0 "Execution mode" (`auto`→`auto`, `paused-between-waves`→`per-wave`). Under `dw`, `per-task` ⇒ one task per wave. |
+| Concurrency cap | int ≥ 1 — default `3` (raise only with explicit user approval) |
+| DW min tasks | int ≥ 1 — default `8` (auto-dispatch threshold) |
+| DW min parallel ratio | 0.0–1.0 — default `0.6` (auto-dispatch threshold; ratio = widest-wave-width / total-tasks) |
+| Review enabled | `true` / `false` — default `false` |
+| Review pattern | `adversarial` / `spot-check` / `none` — default `adversarial` when review is enabled |
+| Review fail action | `revise` / `halt` / `flag-only` — default `revise` |
+| Compliance critical | `true` / `false` — default `false`. When `true`: `dw` blocked (override only `--allow-dw-on-compliance` + confirmation); review forced `true`+`adversarial`; `flag-only` rejected. |
 
 ---
 

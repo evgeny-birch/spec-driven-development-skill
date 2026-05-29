@@ -322,6 +322,47 @@ You do not need to hunt for the manual checklist — it appears in the orchestra
 
 ---
 
+## Execution preferences (v1.0)
+
+v1.0 adds three independent ways to tune how a plan runs. They are **opt-in**: a `plan.md` that sets none of them runs exactly as it did in pre-1.0. You set them as optional rows in `plan.md` §1 Meta, or override them per run with invoke flags. The full contract is in the skill (`SKILL.md` § "Execution preferences" / "Review orchestration"); this is the human map.
+
+The three axes are orthogonal — any combination is valid:
+
+- **Engine** — *who runs the tasks.* `task-tool` (default; the pre-1.0 one-agent-per-task model) or `dw` (the Workflow tool, for large, highly parallel epics), or `auto` (the skill picks `dw` only when the work is big and parallel enough — ≥ 8 tasks and a wide-enough widest wave). Choosing `dw` has two honest caveats: it needs the Workflow tool to be available (if not, the skill asks or falls back to parallel agents — never silently), and a Workflow run can't pause mid-flight, so each wave is one Workflow call with you approving between waves.
+- **Stop mode** — *when it pauses for you.* `auto` (run straight through), `per-wave` (default; pause after each wave — the old "paused-between-waves"), or `per-task` (pause after every task).
+- **Review** — *adversarial review of each task.* When enabled, after a task is built an independent reviewer subagent gets **only** the spec + the task + the final diff (never the implementer's reasoning or chat history) and tries to **refute** it, returning a structured verdict (PASS / FAIL / NEEDS_REVISION). `fail_action` decides what happens on a non-PASS: `revise` (default — send it back), `halt`, or `flag-only` (record and move on). A hard safety rail: three non-PASS rounds on one task stops the run and asks you to decide — no infinite revision loops.
+
+**Compliance mode.** Set `Compliance critical: true` on a plan and the skill hardens it: the `dw` engine is blocked (override only with `--allow-dw-on-compliance` and a confirmation), and review is forced on as `adversarial` with `flag-only` disallowed. The forced values are written into `review.log.md` so the audit trail shows why they differ from the plan.
+
+**Invoke flags** (one-run overrides, highest precedence): `--engine`, `--stop`, `--review`, `--allow-dw-on-compliance`. Precedence top-down: flag → `plan.md` rows → project `CLAUDE.md` defaults → skill defaults.
+
+A note on validation: these are instructions to an agent reading prose, not a config parser. The rule is **"don't guess — stop and ask"**: a typo or unknown value in the safety rows (engine, review, compliance) stops the run with a clear message rather than silently falling back, because a silent fallback there could quietly drop a protection.
+
+### How to pick a mode (worked example)
+
+Writing the spec is unchanged — invoke the skill (`/spec-development`, "write a spec for…") and it walks `epic → tasks → plan` as always. Mode selection happens on the **plan**, and affects **execution only**.
+
+**Want it exactly like before (pre-1.0)?** Do nothing. Set no execution rows. You get Task tool, pause-between-waves, no review.
+
+**Want the new behaviour?** Add the rows you care about to `plan.md` §1 Meta — e.g.:
+
+```
+| Engine | dw |                ← Workflow tool (or auto / task-tool)
+| Stop mode | per-wave |       ← auto / per-wave / per-task
+| Review enabled | true |
+| Review pattern | adversarial |
+```
+
+**Just for one run, without editing the plan?** Override with flags when you kick off execution:
+
+```
+execute --engine dw --review adversarial --stop per-wave
+```
+
+Precedence (highest first): **flag → `plan.md` rows → project `CLAUDE.md` defaults → skill defaults.**
+
+When you say "execute", the orchestrator confirms the stop mode, and — if you chose `dw` — checks the Workflow tool is available (if not, it asks or falls back to parallel agents, never silently). Then it runs wave by wave; with review on, each task gets a reviewer verdict before the wave merges.
+
 ## Working rules (summary)
 
 Full rules are in `.claude/skills/spec-development/SKILL.md`. Highlights:

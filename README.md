@@ -77,6 +77,16 @@ Once installed, any of these triggers the skill:
 
 When the phrasing is ambiguous between tracks, the skill asks before creating any file.
 
+## v1.0 — execution preferences (optional, backward-compatible)
+
+v1.0 adds three orthogonal, opt-in ways to tune how a plan executes. **A `plan.md` that sets none of them runs exactly as pre-1.0** — nothing to migrate. Set them as optional rows in `plan.md` §1 Meta, or override per run with flags.
+
+- **Engine** — `task-tool` (default, the pre-1.0 model) · `dw` (the Workflow tool, for large parallel epics) · `auto`.
+- **Stop mode** — `auto` · `per-wave` (default) · `per-task`.
+- **Adversarial review** — an independent reviewer subagent gets only the spec + task + final diff (never the implementer's reasoning) and tries to *refute* the result, returning a structured PASS / FAIL / NEEDS_REVISION verdict. A three-strikes rail stops infinite revision loops.
+
+Set `Compliance critical: true` to block the `dw` engine and force adversarial review on. Invoke flags (`--engine`, `--stop`, `--review`, `--allow-dw-on-compliance`) override per run. Full contract in the skill's `SKILL.md` and the human map in [`docs/workflow.md`](docs/workflow.md).
+
 ## What lands in your repo
 
 After a full-triplet run:
@@ -85,15 +95,16 @@ After a full-triplet run:
 docs/
 ├── specs/
 │   └── SPEC-001-your-slug/
-│       ├── epic.md         ← what & why
-│       ├── tasks.md        ← work breakdown
-│       └── plan.md         ← execution waves + dependency graph
+│       ├── epic.md                   ← what & why
+│       ├── tasks.md                  ← work breakdown
+│       ├── plan.md                   ← execution waves + dependency graph
+│       └── verification-checklist.md ← per-spec anti-hand-wave hand-off contract
 └── bugs/                   ← seeded on first defect filing
     ├── README.md
     └── BUG-001-...md
 ```
 
-Small specs collapse to a single `spec.md`; hotfixes use `HF-NNN-{slug}/hotfix.md` on a parallel sequence.
+Small specs collapse to a single `spec.md` (plus `verification-checklist.md`); hotfixes use `HF-NNN-{slug}/hotfix.md` on a parallel sequence. When review is enabled (v1.0), a run also writes a `review.log.md` alongside the plan.
 
 ## When NOT to use this
 

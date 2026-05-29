@@ -28,6 +28,9 @@ How to use:
 - [ ] **Negative paired tests exist.** For every guard / validation / rule the task introduces, at least one "fires correctly" AND at least one "does NOT fire incorrectly" test. Half-tested guards are common rubber-stamp footguns.
 - [ ] **Additional scenarios discovered during implementation appended to the task file.** If you found edge cases, write them down — they protect the next reader.
 - [ ] **Adjacent-configs sweep done.** When the task changes an integration boundary (auth model, port, env-var name, new service, storage path), grep across `Makefile`, `infra/`, `.github/workflows`, `*Dockerfile`, README, scripts, `.env.example`. All hits fixed in the same PR.
+- [ ] **MANDATORY — Exit-code honesty (HR-1).** A multi-step run's "green" is read from each step's own result, not the exit code of the last command in a pipe / a trailing `grep`/`tail`. A backgrounded "exit 0" is not proof — read the artefact/log the run produced.
+- [ ] **MANDATORY — No un-gated or silently-skipped layers (HR-2).** Every test layer that matters runs in the gate; a self-skipped test without a `BUG-NNN` reference is rot, not a pass. A layer that can't run here is surfaced at hand-off, not dropped.
+- [ ] **MANDATORY — Domain failure surfaces as non-2xx (HR-4).** Any domain/business failure the task can produce returns 4xx/5xx, never a 2xx with an error body. A `200` with `status:"failed"` is a green that lies.
 - [ ] **PR description references the task ID and SPEC-NNN.**
 - [ ] **Hand-off summary uses the §8 template at the bottom of this file.**
 
@@ -41,6 +44,7 @@ When the task writes to or reads from a persistent store (Postgres, MongoDB, Red
 - [ ] **MANDATORY — Status / state-machine transition asserted by post-condition row read** after the action. "The handler returned 200" is necessary but not sufficient.
 - [ ] **MANDATORY — Foreign-key cascades verified.** If your migration adds an FK with `ON DELETE CASCADE` (or equivalent), write a test that creates parent + child, deletes the parent, asserts the child is gone via storage query.
 - [ ] **MANDATORY — Optimistic-concurrency tested with row count after action.** When you claim "second concurrent write returns 409", the test post-condition shows row count = 1 (only the winner left a row).
+- [ ] **MANDATORY — Scope assertions to rows you created, not a global total (HR-3).** Assertions filter by seeded id / unique marker; never assert a global count or "the whole list has N" — fragile under parallelism and cross-task contamination (first-class with the `dw` engine). Clean up rows you create (`afterAll`/`finally`).
 - [ ] **Migration up + down round-trip.** Forward → down → forward succeeds without manual cleanup against a fresh DB.
 - [ ] **Index existence asserted** when migration adds an index (e.g., `pg_indexes` query for Postgres).
 - [ ] **Enum membership asserted** when migration adds enum values.

@@ -252,6 +252,11 @@ Apply to **every task**, regardless of language / framework / spec scope. Specs 
 13. **Live exercise IS the test for infra / deployment specs.** Paper validation (linter, config-validate, dry-run) proves syntax, not behaviour. For specs whose primary deliverable is infrastructure or deployment topology, the live-smoke target executed against real cloud / real dependencies is the only meaningful verification — not unit tests, not config validation. A task in such a spec is `done-paper` after paper validation but stays `done-paper` until the smoke target returns green from a real deploy. Flip to `done` only then. The first live exercise of a non-trivial infra spec routinely surfaces multiple bugs that paper validation cannot catch — UID/permission mismatches between host and container conventions, build-time vs runtime env-var bundling, lifecycle scripts that aren't re-runnable, healthcheck primitives that don't exist in distroless images, ACL prerequisites at the cloud provider that must be pre-declared. Plan the spec assuming the first live exercise will produce 3–8 hot-fix commits, and budget time accordingly.
 14. **Idempotent setup scripts must auto-detect their re-run state.** A bootstrap, migration, or provisioning script that runs N steps must not assume it always starts from a clean state. After step K runs once, the system is in a different shape; the next invocation must detect "step K already done" and either skip it or pick the right re-run path. Common failure mode: a script that disables root SSH at step 3, then is re-run as `root`, fails at step 1 because the entry-point user is no longer reachable. Mitigation pattern: every step that mutates a long-lived environment has a pre-check (file existence, user existence, probe response) that decides whether to skip / replay / pick the alternative path; the script's wrapper similarly auto-detects the entry path (which user to ssh as, which step to start from). Test idempotence by running the script twice in succession on a clean target.
 
+15. **Exit-code honesty — read each step, not the tail.** A multi-step run's success is read from each step's own result, not from the exit code of the last command in a pipe or a trailing `grep`/`tail` (which mask the real status). A backgrounded "exit 0" is not proof — read the artefact / log file the run produced, not the wrapper's exit code.
+16. **No un-gated or silently-skipped test layers.** Every test layer that matters runs in the project's gate. A test that skips itself **without** a `BUG-NNN` skip-with-reference is treated as rot, not as a pass. A coverage percentage does not catch a whole layer rotting; a no-silent-skip gate does. If a layer cannot run in the executing environment, surface it explicitly at hand-off — do not let it quietly drop.
+17. **Scope assertions to rows you created, never a global total.** Assertions target the specific rows / entities the test created (filter by seeded id / unique marker), never a global count or "the whole list has N". Global-count assertions are fragile under parallelism and cross-task contamination — and with the `dw` engine making parallel execution first-class, this is mandatory, not optional. Clean up what you create.
+18. **A domain failure must surface as a non-2xx.** A business / domain failure returns 4xx or 5xx — never an HTTP 2xx carrying an error body (`200` with `status:"failed"`). A success status on a failed operation defeats HTTP-level observability and any poll / health assertion that keys on the status code; it is a "green that lies".
+
 ### Definition of Done (global — applies to every task)
 
 A task may be marked `completed` only when:
@@ -319,14 +324,46 @@ The user should NOT have to coordinate agents — the orchestrator does it.
 
 Default cap: **3 parallel task agents**. Overrideable per-plan in plan.md §1 (Meta). Raising the cap requires explicit user approval at plan-creation time.
 
-### Execution modes (ask at Wave 1 kickoff)
+### Execution preferences (v1.0)
 
-Before spawning the first task agent of any plan, the orchestrator asks the user which mode to run:
+Three orthogonal axes — **engine**, **stop mode**, **review** — configured by optional rows in `plan.md` §1 Meta (see the plan template). All optional; absent ⇒ default ⇒ **identical to pre-1.0**. pre-1.0 `plan.md` files without these rows are untouched.
 
-- **`auto`** — run all waves sequentially without stopping. Orchestrator only pauses on failures or user-required review gates at epic end.
-- **`paused-between-waves`** — after each wave completes (including merge + automated review), orchestrator stops and asks the user to approve starting the next wave.
+**Resolution precedence** (highest first): invoke flag → `plan.md` Meta rows → project `CLAUDE.md` execution defaults → skill defaults. Each layer overrides only the fields it sets; everything unset falls to the skill default.
 
-Record the chosen mode in plan.md §1. It can be changed between waves by the user.
+- *Worked example:* `plan.md` sets `Engine: dw`; the user invokes with `--engine task-tool`. The flag wins → `task-tool`. `Stop mode` (unset by the flag) keeps the plan's value, or `per-wave` if the plan didn't set it.
+
+**Engine** — `task-tool` (default) / `dw` (the Workflow tool) / `auto`.
+- `auto` dispatch: choose `dw` iff `tasks_count ≥ DW min tasks` (default 8) **and** `parallel_ratio ≥ DW min parallel ratio` (default 0.6), where `parallel_ratio = widest-wave-width / total-tasks`. Otherwise `task-tool`.
+- **Workflow constraints (when `dw` is resolved):** (1) the Workflow tool needs the user's opt-in — if it is not available, do **not** run silently: ask to confirm launching a workflow, or degrade to parallel `Agent` calls, stating the choice. (2) A Workflow run executes to completion and cannot pause mid-run, so **one wave = one Workflow call**; the orchestrator owns pauses *between* calls (stop mode).
+
+**Stop mode** — `auto` / `per-wave` (default) / `per-task`. Ask at Wave 1 kickoff; record in `plan.md` §1; the user may change it between waves.
+- `auto` — run all waves without stopping; pause only on failure or a user-required gate.
+- `per-wave` — pause after each wave (merge + review) for approval. (= the pre-1.0 "paused-between-waves".)
+- `per-task` — pause after each task. Under `dw` this degrades to "one task per wave" (a Workflow run can't pause mid-task) — a documented limitation, not a rejected combination.
+
+**Right-sized validation (no silent guessing).** These are behavioural rules, not a parser — the substrate is an LLM reading prose. On an **unrecognised value** or an **unrecognised execution row** (e.g. a typo `Engne` or `Engine: dwx`), the orchestrator **stops and asks** rather than applying a silent default — strictness is concentrated on the safety rows (`Engine`, `Review *`, `Compliance critical`), because a typo there silently removes protection. The message states: the field, the received value, the accepted values, the file (and line where possible), and a one-line fix hint. A **missing optional row** is not an error — it takes the default.
+
+**Invoke flags** (override for one invocation): `--engine auto|task-tool|dw`, `--stop auto|per-wave|per-task`, `--review adversarial|spot-check|none`, `--allow-dw-on-compliance` (see Compliance mode under Review orchestration).
+
+**Backward-compatibility guarantees.** A `plan.md` with no execution rows behaves exactly as pre-1.0 — no new prompts, no engine/review behaviour. The slash command and natural-language triggers are unchanged. `SPEC/HF/BUG` numbering is unchanged. The hotfix track gains none of this (always Task tool, never DW, no auto-review). The small-spec track gains optional review only (engine is always Task tool).
+
+### Review orchestration (v1.0)
+
+When `Review enabled: true`, each task gets an independent **adversarial review** after implementation. Pattern: `adversarial` (default) / `spot-check` / `none`.
+
+**Reviewer contract — the input firewall.** The reviewer is a separate subagent that receives **only**: the spec content (`epic.md`/`spec.md`), the single task block (incl. its `Acceptance`/`Risk` if present), and the final diff/output. It must **not** receive the implementer's reasoning, intermediate tool calls, conversation history, or prior review rounds. Its primary instruction is `templates/reviewer-instructions.md` — **`SKILL.md` is NOT loaded for the reviewer.** This firewall is largely free: a freshly spawned subagent starts without the implementer's context; the orchestrator only has to build the reviewer's prompt from the three allowed inputs and nothing else.
+
+**Per engine:**
+- **Task tool** — after the implementation Agent call, the orchestrator makes a second `Agent` call for the reviewer, prompt = `reviewer-instructions.md` + the three inputs, and (for structured output) instructs the exact `review-verdict-template.md` format.
+- **`dw`** — the reviewer is a pipeline stage: `agent(reviewerPrompt, {agentType: 'reviewer', schema: VERDICT})`. `agentType` loads `reviewer-instructions.md`; `schema` validates the verdict at the tool-call layer.
+
+**Verdict** — structured (`review-verdict-template.md`): `PASS` / `FAIL` / `NEEDS_REVISION` + findings (`severity` critical/major/minor, `category` spec-deviation/silent-failure/acceptance-miss/quality/test-gap, `suggested_action`). Categories are tied to `verification-checklist.md` MANDATORY items + the §"Verification rigour" rules — one anti-hand-wave system, not two. Append every round to `review.log.md` (header from `review-log-template.md`).
+
+**`fail_action`** — `revise` (default; return findings to the implementer and re-run) / `halt` (stop on first non-PASS) / `flag-only` (record the finding, accept the task, continue).
+
+**Three-strikes (hard safety rail).** Keep a per-task strike counter within a run; increment on each `FAIL`/`NEEDS_REVISION`. At **3 consecutive non-PASS verdicts** on one task, **hard-halt regardless of `fail_action`** — output the task ID, the three rounds of findings, and ask the user to decide. (`flag-only` doesn't loop; `halt` stops at one. Three-strikes guards the `revise` loop against running forever.)
+
+**Compliance mode.** When `Compliance critical: true` (in `plan.md`, or a project `CLAUDE.md` compliance label), evaluate this **before engine dispatch**: (1) `dw` is **blocked** — override only via `--allow-dw-on-compliance`, which triggers an explicit confirmation prompt (decline ⇒ halt); (2) `Review enabled` is forced `true`; (3) `Review pattern` is forced `adversarial`; (4) `Review fail action: flag-only` is rejected (must be `revise`/`halt`). These forced values are logged in the `review.log.md` header so the audit trail shows why they differ from `plan.md`.
 
 ### Merge strategy
 
@@ -479,6 +516,9 @@ Create `docs/specs/` if it does not yet exist. All three spec shapes live in the
 - `templates/verification-checklist.md` — per-spec agent-facing checklist (universal floor + project-specific extension slots). Copied into every spec directory.
 - `templates/bug.md` — per-bug report template (`docs/bugs/BUG-NNN-{slug}.md`).
 - `templates/bugs-readme.md` — `docs/bugs/README.md` template (numbering, severity, lifecycle, skip-with-reference convention, anti-pattern note).
+- `templates/reviewer-instructions.md` — primary instruction for the adversarial reviewer subagent (v1.0); loaded instead of `SKILL.md`.
+- `templates/review-log-template.md` — header for the per-run `review.log.md` (v1.0); records resolved execution prefs + compliance overrides.
+- `templates/review-verdict-template.md` — one structured review-verdict entry (v1.0); fixed enums for greppability.
 
 ## Portability
 
