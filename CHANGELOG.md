@@ -5,6 +5,12 @@ All notable changes to the `spec-development` skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-07-23
+
+### Fixed
+- **Removed stack-specific coupling from the E2E gate.** The "E2E gate — operating rules" block in `docs/workflow.md` was hardcoded to one project's stack (fixed ports `:3001`/`:18081`/`:55434`/`:9099`, Firebase Auth Emulator + Admin SDK, `make e2e-stack-up`/`-down`, `pnpm exec playwright test`, a concrete snapshot path). All of it is now expressed as universal principles — isolated per-run test stack, dev stack untouched, positive + negative scenarios, no mocking the auth boundary, committed visual baselines — with the concrete commands/ports/services delegated to the project's `CLAUDE.md`. The skill is now portable to any stack.
+- Dropped the `**Pebble-specific**` label and genericised the repro-step example in `bug.md` (`make e2e-stack-up` → "start the test stack"). Tool names that remain (Playwright, Vitest, axe-core, Postgres, …) are worded as cross-ecosystem examples, not requirements.
+
 ## [1.0.0] — 2026-05-29
 
 First release at a major version (prior tags were pre-1.0 `v0.0.x`). Three orthogonal, opt-in execution mechanisms on top of the unchanged pre-1.0 core. **Fully backward-compatible: a `plan.md` with no execution rows behaves exactly as before — nothing to migrate.**

@@ -33,7 +33,7 @@
 Numbered, plain prose. Reproducible from a clean checkout. Include the
 exact command lines anyone needs to run.
 
-1. `{step one — e.g. "make e2e-stack-up"}`
+1. `{step one — e.g. "start the test stack"}`
 2. `{step two — e.g. "curl -X POST … -d '…'"}`
 3. `{step three — e.g. "observe the response body"}`
 

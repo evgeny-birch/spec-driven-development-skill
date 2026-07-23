@@ -294,22 +294,22 @@ Both are **Claude Code plugin commands** (`claude-code-plugins/code-review` in p
 |---|---|---|
 | Code review | end of each wave | `code-review` |
 | Security review | wave touches auth / sessions / consent / PII / PHI / payments | `security-review` |
-| **E2E suite (isolated stack)** | end of each wave that changes user-visible flow, API contract, schema, or auth/middleware | `make e2e-stack-up && pnpm exec playwright test && make e2e-stack-down` |
+| **E2E suite (isolated stack)** | end of each wave that changes user-visible flow, API contract, schema, or auth/middleware | the project's E2E command against an isolated test stack (see operating rules below) |
 | Architecture review | at epic end, non-trivial epics | prompt-level (dedicated skill to come) |
 
 #### E2E gate — operating rules
 
-> Universal verification rules (computed-style asserts not className, audit-row by SQL grep, image render asserted by `naturalWidth > 0`, locale/tz/Accept-Language pinning + adversarial flip variant, etc.) live in the skill — see `.claude/skills/spec-development/SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`. The rules below are **Pebble-specific E2E operating constraints** layered on top of the universal floor.
+> Universal verification rules (computed-style asserts not className, audit-row by storage query, image render asserted by `naturalWidth > 0`, locale/tz/Accept-Language pinning + adversarial flip variant, etc.) live in the skill — see `.claude/skills/spec-development/SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`. The rules below are the **E2E operating constraints** a project layers on top of that universal floor — adapt the specifics (commands, ports, services) to your stack and pin them in the project's `CLAUDE.md`.
 
 The E2E gate exists so a wave merges only after the full surface still works end-to-end, including visual regression. It is a hard gate; if it fails, the wave does not merge.
 
-- **Runs against the isolated test stack only.** Ports `:3001` (web), `:18081` (API), `:55434` (Postgres), `:9099` (Firebase Auth Emulator). The user's dev stack on `:3000`/`:18080`/`:55432` is never touched. The orchestrator brings the test stack up before the gate, runs Playwright, and tears it down after.
-- **The test stack is per-run.** `make e2e-stack-up` reseeds a deterministic admin row + fresh invite URL into a throwaway Postgres container; `make e2e-stack-down` removes everything. Never reuse a stale stack across runs — invite tokens are single-use, used rows from a previous run will cause spurious failures.
+- **Runs against an isolated test stack only.** The test stack binds its own ports/containers, distinct from the user's dev stack, so the two never collide. The orchestrator brings the test stack up before the gate, runs the suite, and tears it down after.
+- **The test stack is per-run.** Bring-up reseeds deterministic fixtures into throwaway storage; tear-down removes everything. Never reuse a stale stack across runs — single-use fixtures (invite tokens, one-time rows) from a previous run cause spurious failures.
 - **Suite scope per wave.** The orchestrator picks specs whose surface overlaps the wave's `Scope paths`. A regression set (the always-on smoke specs) runs on every wave regardless. The full suite + visual baselines runs at epic end.
-- **Visual baselines.** Each spec that owns a visual surface owns a `.png` baseline under `tests/e2e/specs/<spec>-snapshots/`. Re-baseline only via explicit `--update-snapshots` and only when the change is intended.
-- **Positive AND negative scenarios.** Each new spec must include the happy path AND at least one negative path the spec is meant to defend against (e.g. invalid invite, expired invite, last-admin guard, self-mutation guard).
-- **No mocks of the auth boundary.** The Firebase Auth Emulator is the only legitimate substitute; tests mint real ID tokens via the Admin SDK against the emulator. Faking the verifier is forbidden.
-- **The dev stack stays alive throughout.** The user verifies UX manually on `:3000` after the orchestrator hands off, against the same code that just passed the test stack. Agents NEVER stop or restart the dev stack.
+- **Visual baselines.** Each spec that owns a visual surface owns a baseline snapshot committed alongside the spec's tests. Re-baseline only via an explicit update flag and only when the change is intended.
+- **Positive AND negative scenarios.** Each new spec must include the happy path AND at least one negative path the spec is meant to defend against (e.g. invalid input, expired token, last-admin guard, self-mutation guard).
+- **No mocks of the auth boundary.** Substitute the real auth mechanism only with its official emulator or test double, and exercise real tokens against it. Faking the verifier is forbidden.
+- **The dev stack stays alive throughout.** The user verifies UX manually after the orchestrator hands off, against the same code that just passed the test stack. Agents NEVER stop or restart the dev stack.
 
 ### User-triggered (orchestrator reminds you at epic end)
 
