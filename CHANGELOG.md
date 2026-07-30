@@ -5,6 +5,37 @@ All notable changes to the `spec-development` skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-07-30
+
+Contract-integrity release. An audit of 1.0 read the skill as a *system of cross-references* for the first time and found rules that were declared in one file, defined in a second, and enforced by an agent that received neither. **No existing `epic.md` / `spec.md` / `tasks.md` / `plan.md` becomes invalid**; new sections are additive and the one rename keeps its aliases.
+
+### Fixed
+- **The adversarial reviewer was starving.** It was instructed to map findings to the spec's `verification-checklist.md` MANDATORY items and to rules `HR-1..HR-4` in `SKILL.md` — while `SKILL.md` is explicitly not loaded for it and the checklist was not among its inputs. It has been judging by rules it could not read since 1.0. Its input list is now five items (spec · task block · diff · the checklist **including §10+** · the implementer's hand-off), `reviewer-instructions.md` is the normative source of that list, and the text of `VR-15`…`VR-18` is written into that file so nothing points at an unavailable one.
+- **The hand-off template reported 12 of 18 rigour rules**, silently omitting three MANDATORY items from §0 of the same file. It now reports all 18, one line each.
+- **`MANDATORY` was simultaneously un-waivable and waivable** — §"How to use" forbade waiving it, the §8 template offered `⚠️ waived` on every rule. The `waived` option now appears only where waiving is legal; a waived MANDATORY item is a `critical` finding.
+- **The anti-hand-wave floor only bound the full-triplet track**, and `SKILL.md` copied `verification-checklist.md` into the spec directory *only* on that track — so on the other two the file the agent was told to honour might not exist. Both fixed.
+- **Up to three task agents were told to write one Markdown table** in `plan.md` §11 with no owner declared. Task agents now *return* their row; the orchestrator is the sole writer.
+- **`spot-check` was an undefined value inside a safety enum** and `Risk` was a field whose only consumer was that undefined mode. Both now have defined behaviour — and an undefined value in a safety field is more dangerous than a missing one, because the agent silently substitutes its own reading.
+- **Five templates pointed at `docs/future-work.md` and `docs/prod-readiness.md`**, which the skill had no way to create. Both now have templates and a lazy-creation rule modelled on `docs/bugs/`.
+- **`verification-checklist.md` §9 gated only §0–§7** before a wave merged — skipping §10+, the only part of the file specific to that spec.
+- `templates/tasks.md` linked `../verification-checklist.md`, correct only for the split `tasks/` layout and broken in the default inline one.
+- `docs/workflow.md` claimed "the 12 universal anti-hand-wave rules" (there are 18) and `SKILL.md` claimed the hand-off maps "rules 1–4" (the template said 1–12) — three sources, three numbers.
+
+### Added
+- **`waiver-abuse` finding category** — the only place an agent may legally declare a rigour rule inapplicable now has a contour of refutation. Categories: `spec-deviation` · `silent-failure` · `acceptance-miss` · `quality` · `test-gap` · `waiver-abuse`.
+- **Claims framing for the reviewer** — read the diff and reach a verdict *before* reading the hand-off; treat it as assertions to disprove; a claim not independently verifiable from the diff is itself a finding of severity `major` or higher.
+- **`epic.md` §26 Change log / `small-spec.md` §10** — an audit trail for the requirements, the counterpart to `review.log.md` for the reviews. A re-plan bumps `Version` and writes the row before regenerating tasks; under `Compliance critical: true` a missing row is a halt.
+- **Destructive-DDL gate** — a task carrying `DROP COLUMN` / `DROP TABLE` / type narrowing / `NOT NULL`-on-populated does not share a wave with its dependents, its down-migration is verified before merge, and the change needs explicit confirmation *at merge time* naming what data is lost. A `DB change review` gate row invokes the project's DB-review skill **if one is installed** and is marked `aspirational` otherwise — no specific skill is named anywhere (the 1.0.1 portability precedent).
+- **Epic completeness self-check** at `draft` → `in-review` — mechanical only: uncovered requirements, criteria with no observable outcome, leftover placeholder text, surfaces with no §10+ section, empty Out-of-scope. Reported as questions, blocks nothing outside compliance mode.
+- **Brownfield recon (Phase 0)** — `templates/recon.md`, written before the epic when the work touches code the author did not write. Every claim cites a path or symbol; an uncited section counts as unfilled.
+- **Status ownership** — `epic.md` §1 (or `spec.md` §1) is the single source of truth; the statuses in `tasks.md` / `plan.md` are derived. Divergence stops and asks rather than being silently aligned.
+- **Compliance declaration site for plan-less tracks** — `spec.md` §1 / `hotfix.md` §1. A `CLAUDE.md` compliance label covers every track and cannot be lowered by a per-spec row.
+- New templates: `future-work.md`, `prod-readiness.md`, `recon.md`.
+
+### Changed
+- Verification-rigour rules carry a single identifier `VR-01`…`VR-18`. `HR-1`..`HR-4` remain as one alias line — existing specs referencing them still resolve.
+- `SKILL.md` no longer restates the nine hand-off slots; the §8 template is the single source. Net growth across the whole release: **+53 lines** (525 → 578), inside a hard 60-line budget — every rule added to a prose contract lowers adherence to the rest, so additions had to pay for themselves by deleting duplication.
+
 ## [1.0.1] — 2026-07-23
 
 ### Fixed

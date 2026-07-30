@@ -14,7 +14,7 @@ round: {n}
 verdict: {PASS | FAIL | NEEDS_REVISION}
 findings:
   - severity: {critical | major | minor}
-    category: {spec-deviation | silent-failure | acceptance-miss | quality | test-gap}
+    category: {spec-deviation | silent-failure | acceptance-miss | quality | test-gap | waiver-abuse}
     description: {what is wrong, tied to a spec clause / acceptance criterion / rigour rule}
     suggested_action: {revert | patch | re-implement}
   - severity: {…}
@@ -26,7 +26,7 @@ findings:
 Enum reference:
   verdict   : PASS | FAIL | NEEDS_REVISION
   severity  : critical | major | minor
-  category  : spec-deviation | silent-failure | acceptance-miss | quality | test-gap
+  category  : spec-deviation | silent-failure | acceptance-miss | quality | test-gap | waiver-abuse
   action    : revert | patch | re-implement
 PASS  → findings empty.
 FAIL  → re-implementation warranted (critical findings).

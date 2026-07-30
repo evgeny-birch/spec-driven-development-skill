@@ -16,6 +16,7 @@
 | Title | {short title} |
 | Track | small-spec |
 | Status | draft / approved |
+| Compliance critical | `true` / `false` — default `false`. This track has no `plan.md`, so compliance is declared here. A project `CLAUDE.md` compliance label overrides `false` and cannot be lowered by this row. |
 | Created | YYYY-MM-DD |
 | Last updated | YYYY-MM-DD |
 | Owner | {name} |
@@ -103,6 +104,16 @@ Only steps automation cannot reliably cover. For UI tasks, a browser walkthrough
 
 - [ ] ...
 
+## 7.5 Verification rigour gate
+
+Before marking this spec complete, walk `./verification-checklist.md` (copied into this directory when the spec was created). The mandatory subset on this track:
+
+- **§0 Universal — all of it, no exceptions.** Type-check, lint, existing suites green, core scenarios automated, negative paired tests, adjacent-configs sweep, and the three MANDATORY items `VR-15` (exit-code honesty — the green was read per step, not from a trailing command), `VR-16` (no silently-skipped layer), `VR-18` (domain failure surfaces as non-2xx).
+- **§1–§7** — whichever surface families this change touches (persistence, UI, audit, concurrency, E2E, external API, i18n). An untouched surface is reported `n/a — <why>`, not omitted.
+- **§10+** — optional on this track, but if the change touches a surface the universal floor does not cover, add it.
+
+The hand-off uses the checklist's §8 template, which reports all 18 rules. MANDATORY items cannot be waived; see the waiver rules in §8.
+
 ## 8. Open questions
 
 - ...
@@ -113,3 +124,13 @@ If this change surfaces anything that belongs in the cross-spec files, list it h
 
 - **prod-readiness.md:** {item to append, reason}
 - **future-work.md:** {deferred item, proposed FW-NN slot}
+
+## 10. Change log
+
+Rows added only when this spec changes after it was approved. Keep it to one line per change — the point is the trail, not the prose.
+
+| Date | What changed | Reason | Approved by |
+|---|---|---|---|
+| YYYY-MM-DD | §5 AC-2 tightened | {what forced it} | {name} |
+
+Under `Compliance critical: true`, changing this spec without a row here is a halt.
