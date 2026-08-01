@@ -133,7 +133,7 @@ Then for each wave:
 3. After all tasks in the wave complete, orchestrator merges the wave branch and runs automatic review gates.
 4. If mode is `paused-between-waves`, stops and asks before the next wave.
 
-**One status field is the truth.** `epic.md` §1 `Status` (or `spec.md` §1 for a small spec) is authoritative; the status rows in `tasks.md` and `plan.md` are derived views the orchestrator maintains. If they disagree, the orchestrator stops and asks you which is right — it will not quietly pick one, and it will not pick the more flattering one.
+**Status flows bottom-up.** Up to `approved` the epic leads and you set it. After that the tasks do: the first one to start makes the epic `in-progress`, all of them closing makes the plan `completed` and the epic `done`. The orchestrator writes all three and never picks the more flattering value. One combination stops the run and asks you — a task executing while the epic is not yet `approved`, which means work is being built against requirements nobody approved.
 
 At epic end, the orchestrator prints one consolidated hand-off containing all user-required follow-ups (see "Review gates" below).
 

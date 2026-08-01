@@ -16,7 +16,7 @@
 |---|---|
 | Parent epic | [SPEC-{NNN}: {title}](./epic.md) |
 | Tasks source | [tasks.md](./tasks.md) |
-| Status | `not-started` / `in-progress` / `completed` / `blocked` — tracks *execution*, on its own enum. `epic.md` §1 Status owns the spec's lifecycle; this row is not a function of it. The orchestrator stops and asks only on a contradiction (execution ahead of a `draft`/`in-review` epic, or a `done` epic with unfinished tasks) — see SKILL.md, Status ownership |
+| Status | `not-started` / `in-progress` / `completed` / `blocked` — the aggregate of task progress, written by the orchestrator. Tasks close → this closes → `epic.md` §1 goes `done`. Never ahead of the epic's `approved` |
 | Created | YYYY-MM-DD |
 | Last updated | YYYY-MM-DD |
 
