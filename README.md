@@ -87,6 +87,22 @@ v1.0 adds three orthogonal, opt-in ways to tune how a plan executes. **A `plan.m
 
 Set `Compliance critical: true` to block the `dw` engine and force adversarial review on. Invoke flags (`--engine`, `--stop`, `--review`, `--allow-dw-on-compliance`) override per run. Full contract in the skill's `SKILL.md` and the human map in [`docs/workflow.md`](docs/workflow.md).
 
+## v1.1 — contract integrity
+
+v1.1 fixes a class of defect an audit of v1.0 exposed: **rules the skill declared but never delivered to the agent expected to apply them.** A rule an agent cannot read is worse than no rule — it looks like a gate and isn't one.
+
+- **The reviewer now receives what it judges by.** It was told to map findings to the spec's `verification-checklist.md` and to four named rules, and was handed neither. It now gets five inputs — spec, task, diff, the checklist *including its spec-specific §10+ sections*, and the implementer's hand-off — with the rule text written into its own instruction file.
+- **Waivers are reviewable.** An agent could close any rigour rule with "waived because…" and nothing checked it. New finding category `waiver-abuse`: every waiver and every `n/a` is verified against the diff. The hand-off reaches the reviewer as *claims to refute*, never as evidence.
+- **One identifier per rule.** `VR-01`…`VR-18` replaces the old dual naming (`HR-1`..`HR-4` survive as aliases; nothing to migrate). The hand-off template reports all 18 — it used to report 12, silently omitting three mandatory ones.
+- **The rigour floor binds on all three tracks**, not just the full triplet. `§0` is universal; on a hotfix exactly one item is deferrable (the negative paired test, with a named follow-up).
+- **Requirements get an audit trail.** `epic.md` §26 Change log: what changed, which tasks it invalidated, why, who approved. A re-plan bumps the version and writes the row *before* regenerating tasks.
+- **`spot-check` finally does something.** It reviews tasks that are `Risk: high`, touch a §1–§7 surface, or are `type: infra` — and logs every skip with a reason.
+- **Destructive DDL is gated at the wave boundary**, because reverting a wave does not un-drop a column.
+- **One writer for the progress log, one source of truth for status.** Divergence stops and asks instead of being silently resolved.
+- **Brownfield recon (Phase 0)** for work in code you didn't write, and a mechanical completeness self-check on the epic before decomposition — its two literal checks ship as commands whose output gets pasted, the three semantic ones stay a read.
+
+Upgrading an installed copy: `~/.claude/skills/spec-development/` is a **copy**, not a link — re-run the install command after pulling, or symlink it to the repo, or the agent keeps reading the old contract.
+
 ## What lands in your repo
 
 After a full-triplet run:

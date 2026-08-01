@@ -28,6 +28,8 @@ Thanks for considering a contribution. This skill is small enough that the bar i
 - [ ] Skill still parses (frontmatter intact, no broken links).
 - [ ] If you changed a template, walked at least one real spec through it.
 - [ ] If you changed `SKILL.md`, the corresponding section in `docs/workflow.md` matches.
+- [ ] If you touched a **shared enum or a rule ID** (finding categories, `VR-NN`, execution-preference values), you swept every file that carries it and the lists are identical — `reviewer-instructions.md`, `review-verdict-template.md`, `SKILL.md`, `plan.md`, `verification-checklist.md`. One list living in several files without a named normative source is how this skill's worst defects got in.
+- [ ] Every rule you added is reachable by the agent that must obey it. Naming a rule in `SKILL.md` does **not** make it reachable by the reviewer subagent, which never loads `SKILL.md`.
 - [ ] No private data in examples (project names, partner names, internal URLs, real spec/HF/BUG IDs from your repo).
 
 ## Licensing

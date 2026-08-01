@@ -18,3 +18,13 @@ compliance_overrides_applied: {none | e.g. "review forced enabled+adversarial; f
 ---
 
 <!-- Append one review-verdict-template.md entry per task review below this line. -->
+
+<!--
+Under review_pattern: spot-check, every task that was NOT reviewed gets exactly one skip line,
+in this shape, so a reader can tell "not reviewed" from "reviewed and clean":
+
+skipped: {task_id} — reason: {Risk: low | no §1–§7 surface overlap | …}
+
+Keep the `skipped:` prefix and the ` — reason: ` separator stable: an aggregator greps them,
+and it must be able to distinguish a skip line from a verdict entry.
+-->

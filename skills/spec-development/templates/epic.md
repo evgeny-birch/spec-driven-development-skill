@@ -16,6 +16,7 @@
 | Spec ID | SPEC-{NNN} |
 | Title | {Short Epic Title} |
 | Status | `draft` / `in-review` / `approved` / `in-progress` / `done` / `archived` |
+| Brownfield | yes / no — `yes` ⇒ `recon.md` exists in this directory and was written before this epic (see §4) |
 | Version | 0.1 |
 | Owner | {name} |
 | Contributors | {names} |
@@ -47,7 +48,7 @@ Why the business wants this. Tie to strategy, revenue, compliance, market, or us
 What led to this epic now. Prior decisions, user research, incidents, market signals.
 
 - **Trigger:** why now
-- **Prior art:** what exists today
+- **Prior art:** what exists today. **For a brownfield spec, cite [`recon.md`](./recon.md) rather than restating it** — two copies of the same survey drift, and the recon is the one with citations.
 - **Related research:** links
 - **Decisions already made upstream:** anything fixed that this epic must respect
 
@@ -210,7 +211,7 @@ For each layer touched: technology + rationale. Flag deviations from the project
 
 ### 11.3 Rationale & alternatives
 
-Why these choices, what was rejected, what the tradeoff is.
+Why these choices, what was rejected, what the tradeoff is. For a brownfield spec, the constraints you are working within are in [`recon.md`](./recon.md) §2 and §4 — cite them, do not re-derive them.
 
 ### 11.4 Documentation impact
 
@@ -411,6 +412,7 @@ If this spec touches surfaces not yet covered by the universal floor (specific l
 - **Feature flag?** yes / no / name
 - **Staged rollout?** which users first
 - **Migration:** backfill or transformation of existing data? How?
+- **Destructive DDL?** List every `DROP COLUMN` / `DROP TABLE` / type narrowing / `NOT NULL`-on-populated this epic performs, and what data each discards. If none, state `none`. Anything listed here requires explicit user confirmation at the moment its wave merges — reverting the wave's code does not bring the data back.
 - **Backwards compatibility:** does this break prior behavior? How is it handled?
 - **Kill switch:** how to disable if something goes wrong
 
@@ -477,3 +479,16 @@ How we know this worked after launch. Tie each metric to the business goal in §
 - Design system: {link}
 - Related specs: `docs/specs/SPEC-XXX/`
 - External references: {links}
+
+---
+
+## 26. Change log
+
+Every change to this epic **after** it first reached `in-review` gets a row — this is the audit trail for the requirements themselves, the counterpart to `review.log.md` for the reviews. A re-plan bumps `Version` in §1 and adds a row here **before** any task is regenerated.
+
+| Date | Version | What changed (sections) | Tasks invalidated | Reason | Approved by |
+|---|---|---|---|---|---|
+| YYYY-MM-DD | 0.1 | initial draft | — | — | — |
+| YYYY-MM-DD | 0.2 | §8 FR-N reworded, §20 AC-M added | T-004, T-007 | {what forced the change — a blocker, a review finding, a decision} | {name} |
+
+Under `Compliance critical: true`, editing this epic without adding a row here is a **halt**, not a warning.

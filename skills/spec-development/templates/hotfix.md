@@ -21,6 +21,7 @@
 | Owner | {name} |
 | Severity | sev-1 / sev-2 / sev-3 |
 | Scope | {what surface is broken — page, endpoint, cron, migration…} |
+| Compliance critical | `true` / `false` — default `false`. No `plan.md` on this track, so compliance is declared here. A project `CLAUDE.md` compliance label overrides `false`. |
 
 Fill this at triage, before coding.
 
@@ -85,6 +86,15 @@ If a regression test is NOT feasible (legitimate cases: compiler bug upstream, t
 - [ ] Fix manually verified on the broken surface
 - [ ] For UI hotfixes: browser walkthrough of the affected flow
 - [ ] For API hotfixes: the exact request from §2 now returns the expected response
+
+The rigour floor binds on this track too — `./verification-checklist.md` §0, in full:
+
+- [ ] **`VR-15` exit-code honesty** — the green was read from each step's own result, not from a trailing `grep`/`tail` or a backgrounded "exit 0". Under time pressure this is the first thing that slips.
+- [ ] **`VR-16` no silently-skipped layer** — nothing self-skipped without a `BUG-NNN` reference; a layer that cannot run here is named in §8, not dropped.
+- [ ] **`VR-18` domain failure surfaces as non-2xx** — if the fix touches an API surface.
+- [ ] **§1 persistence items applied** — if the fix touches storage: existence asserted by a storage query, state transition by a post-condition read, assertions scoped to rows the test created (`VR-17`).
+- [ ] **Adjacent-configs sweep** — grep `Makefile`, CI workflows, compose files, `.env.example`, README, scripts for anything the fix renamed. **Not deferrable, even here:** it is a grep, and a rushed fix that changes one env var and misses four other places is the classic hotfix regression.
+- [ ] **Negative paired test** — the one §0 item that may be deferred under incident pressure. If deferred, name the follow-up: `deferred → FW-NN / BUG-NNN`. Anything else in §0 is not deferrable.
 
 ## 8. Follow-up
 

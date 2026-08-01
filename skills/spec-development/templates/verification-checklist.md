@@ -14,7 +14,7 @@ This is a single-page contract between the executing agent and the orchestrator.
 How to use:
 1. Copy this file's checklists into your task hand-off message.
 2. Tick each item with how you verified it (command + expected output, OR storage query + result, OR screenshot path).
-3. Items marked **MANDATORY** cannot be waived. Items marked *contextual* apply only when the task touches the relevant surface.
+3. Items marked **MANDATORY** cannot be waived — see the waiver rules under §8. Items marked *contextual* apply only when the task touches the relevant surface.
 4. Items you cannot verify in your environment must be flagged explicitly (`could not verify in env — needs eyeball by user`), not silently skipped.
 
 ---
@@ -28,9 +28,12 @@ How to use:
 - [ ] **Negative paired tests exist.** For every guard / validation / rule the task introduces, at least one "fires correctly" AND at least one "does NOT fire incorrectly" test. Half-tested guards are common rubber-stamp footguns.
 - [ ] **Additional scenarios discovered during implementation appended to the task file.** If you found edge cases, write them down — they protect the next reader.
 - [ ] **Adjacent-configs sweep done.** When the task changes an integration boundary (auth model, port, env-var name, new service, storage path), grep across `Makefile`, `infra/`, `.github/workflows`, `*Dockerfile`, README, scripts, `.env.example`. All hits fixed in the same PR.
-- [ ] **MANDATORY — Exit-code honesty (HR-1).** A multi-step run's "green" is read from each step's own result, not the exit code of the last command in a pipe / a trailing `grep`/`tail`. A backgrounded "exit 0" is not proof — read the artefact/log the run produced.
-- [ ] **MANDATORY — No un-gated or silently-skipped layers (HR-2).** Every test layer that matters runs in the gate; a self-skipped test without a `BUG-NNN` reference is rot, not a pass. A layer that can't run here is surfaced at hand-off, not dropped.
-- [ ] **MANDATORY — Domain failure surfaces as non-2xx (HR-4).** Any domain/business failure the task can produce returns 4xx/5xx, never a 2xx with an error body. A `200` with `status:"failed"` is a green that lies.
+- [ ] **MANDATORY — Exit-code honesty (`VR-15`).** A multi-step run's "green" is read from each step's own result, not the exit code of the last command in a pipe / a trailing `grep`/`tail`. A backgrounded "exit 0" is not proof — read the artefact/log the run produced.
+- [ ] **MANDATORY — No un-gated or silently-skipped layers (`VR-16`).** Every test layer that matters runs in the gate; a self-skipped test without a `BUG-NNN` reference is rot, not a pass. A layer that can't run here is surfaced at hand-off, not dropped.
+- [ ] **MANDATORY — Domain failure surfaces as non-2xx (`VR-18`).** Any domain/business failure the task can produce returns 4xx/5xx, never a 2xx with an error body. A `200` with `status:"failed"` is a green that lies.
+- [ ] *contextual* **Reproducible from scratch (`VR-12`).** The hand-off's "Reproduce the green state" block carries the exact commands and expected output — commit, branch, env. "Works on my machine" closes nothing.
+- [ ] *contextual* **Live exercise for infra / deployment work (`VR-13`).** Paper validation (linter, config-validate, dry-run) proves syntax, not behaviour. A task whose deliverable is infrastructure stays `done-paper` until a smoke target returns green from a real deploy.
+- [ ] *contextual* **Idempotent setup scripts (`VR-14`).** A bootstrap / migration / provisioning script detects its own re-run state at every mutating step. Tested by running it twice in succession.
 - [ ] **PR description references the task ID and SPEC-NNN.**
 - [ ] **Hand-off summary uses the §8 template at the bottom of this file.**
 
@@ -44,7 +47,7 @@ When the task writes to or reads from a persistent store (Postgres, MongoDB, Red
 - [ ] **MANDATORY — Status / state-machine transition asserted by post-condition row read** after the action. "The handler returned 200" is necessary but not sufficient.
 - [ ] **MANDATORY — Foreign-key cascades verified.** If your migration adds an FK with `ON DELETE CASCADE` (or equivalent), write a test that creates parent + child, deletes the parent, asserts the child is gone via storage query.
 - [ ] **MANDATORY — Optimistic-concurrency tested with row count after action.** When you claim "second concurrent write returns 409", the test post-condition shows row count = 1 (only the winner left a row).
-- [ ] **MANDATORY — Scope assertions to rows you created, not a global total (HR-3).** Assertions filter by seeded id / unique marker; never assert a global count or "the whole list has N" — fragile under parallelism and cross-task contamination (first-class with the `dw` engine). Clean up rows you create (`afterAll`/`finally`).
+- [ ] **MANDATORY — Scope assertions to rows you created, not a global total (`VR-17`).** Assertions filter by seeded id / unique marker; never assert a global count or "the whole list has N" — fragile under parallelism and cross-task contamination (first-class with the `dw` engine). Clean up rows you create (`afterAll`/`finally`).
 - [ ] **Migration up + down round-trip.** Forward → down → forward succeeds without manual cleanup against a fresh DB.
 - [ ] **Index existence asserted** when migration adds an index (e.g., `pg_indexes` query for Postgres).
 - [ ] **Enum membership asserted** when migration adds enum values.
@@ -147,19 +150,30 @@ Copy this template and fill it in for the orchestrator. Anything missing means t
 - Audit row: `SELECT … → 1 row, action='<expected>', actor_id=…`
 - (other storage assertions specific to this task)
 
-**Verification rigour rules (universal — see SKILL.md §"Verification rigour"):**
-- Rule 1 (persistence by storage query): ✅ / ⚠️ waived because <reason>
-- Rule 2 (state-machine post-condition): ✅ / waived because…
-- Rule 3 (audit-row by storage grep): ✅ / n/a (no audit involved)
-- Rule 4 (concurrency by post-condition count): ✅ / n/a (no concurrency involved)
-- Rule 5 (negative test paired): ✅
-- Rule 6 (content not shape): ✅
-- Rule 7 (browser walkthrough): ✅ on `<route>` / could-not-verify: <reason>
-- Rule 8 (computed style not className): ✅ / n/a (no UI)
-- Rule 9 (E2E adversarial flip): ✅ / n/a (no E2E)
-- Rule 10 (image render asserted): ✅ / n/a (no image)
-- Rule 11 (live-stack run): ✅ via T-NNN-smoke / n/a (no external API)
-- Rule 12 (reproducible from scratch): ✅ — commands + expected output below
+**Verification rigour rules — all 18, one line each:**
+- VR-01 (persistence by storage query): ✅ / n/a — <no persistent store touched>
+- VR-02 (state-machine post-condition read): ✅ / n/a — <no status transition>
+- VR-03 (audit row by storage grep): ✅ / n/a — <no audit log>
+- VR-04 (concurrency by post-condition count): ✅ / n/a — <no concurrent path>
+- VR-05 (negative test paired): ✅ / ⚠️ waived — <reason>
+- VR-06 (content not shape): ✅ / ⚠️ waived — <reason>
+- VR-07 (browser walkthrough): ✅ on `<route>` / could-not-verify — <reason> / n/a — <no UI surface>
+- VR-08 (computed style not className): ✅ / n/a — <no UI surface>
+- VR-09 (E2E adversarial pinning + flip): ✅ / n/a — <no E2E suite>
+- VR-10 (image / external resource render asserted): ✅ / ⚠️ waived — <reason> / n/a — <no media>
+- VR-11 (live-stack run, external API as SUT): ✅ via T-NNN-smoke / n/a — <no external API under test>
+- VR-12 (reproducible from scratch): ✅ — see "Reproduce the green state" below
+- VR-13 (live exercise for infra specs): ✅ / n/a — <not an infra / deployment spec>
+- VR-14 (idempotent setup scripts, tested twice): ✅ / n/a — <no setup / provisioning script>
+- VR-15 (exit-code honesty — each step read): ✅
+- VR-16 (no un-gated or silently-skipped layer): ✅
+- VR-17 (assertions scoped to rows you created): ✅ / n/a — <no data created>
+- VR-18 (domain failure surfaces as non-2xx): ✅ / n/a — <no HTTP surface>
+
+**Waiver rules — read before writing `⚠️ waived` or `n/a`:**
+- `⚠️ waived` is available **only** on the lines above that offer it (`VR-05`, `VR-06`, `VR-10`). Every other rule is either tagged MANDATORY on a surface family (`VR-01`–`VR-04`, `VR-07`–`VR-09`, `VR-11`, `VR-17`, `VR-18`) or *contextual* in §0 (`VR-12`–`VR-14`): if the task touches that surface it must be `✅`; if it does not, use `n/a` with the reason. `VR-15` and `VR-16` are always `✅` — a task that ran anything read its results honestly and skipped no layer.
+- A waived MANDATORY item is a `waiver-abuse` finding of severity **critical** at review, not a judgement call.
+- Every `n/a` and every waiver states **why the rule is inapplicable to this diff** — which surface you did not touch, or which precondition does not hold. "Inconvenient", "out of scope", "no time", and a bare `n/a` with no reason are all rejected: the reviewer verifies each one against the diff, and a reason the diff contradicts is a `waiver-abuse` finding.
 
 **Spec-level checklist items addressed (project / spec-specific from §10+):**
 - (list)
@@ -190,7 +204,7 @@ Copy this template and fill it in for the orchestrator. Anything missing means t
 
 These run *after* the agent's hand-off, before the wave is merged:
 
-- [ ] All §0–§7 boxes checked above for every task in the wave.
+- [ ] All §0–§7 boxes checked above for every task in the wave, **and every §10+ project/spec-specific item**. The §10+ sections are the reason this file is per-spec; a gate that skips them gates nothing this spec actually added.
 - [ ] Code-review skill executed if available; findings addressed or filed as BUGs.
 - [ ] Security-review executed if the wave touches sensitive paths (auth, data, PII / PHI, payments, secrets).
 - [ ] CI green on the merged wave branch.

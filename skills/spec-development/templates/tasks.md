@@ -38,7 +38,7 @@ Legend: `type` ∈ { feature, refactor, test, research, bugfix, infra, docs }. `
 |---|---|
 | Type | feature / refactor / test / research / bugfix / infra / docs |
 | Size | S / M / L |
-| Risk | low / medium / high — **optional** (v1.0). Steers spot-check review; absent ⇒ treated as `medium`. |
+| Risk | low / medium / high — **optional**. Consumed by `Review pattern: spot-check` only: `high` forces a reviewer for this task; `medium` / `low` do not (a reviewer may still be spawned because the task's `Scope paths` hit a checklist §1–§7 surface, or because `Type` is `infra`). Absent ⇒ treated as `medium`. Under `adversarial` the field changes nothing — every task is reviewed. |
 | Status | not-started / in-progress / completed |
 | Languages | TS / Go / Python / SQL / … |
 | Scope paths | `apps/web/src/features/…`, `packages/contracts/…` |
@@ -180,7 +180,7 @@ Only steps automation cannot reliably cover. If empty, state `none — fully aut
 
 ##### Verification rigour gate
 
-Before marking the task complete, walk through the spec's [`verification-checklist.md`](../verification-checklist.md) end-to-end. The agent's hand-off summary uses the §8 template from that file. MANDATORY items cannot be skipped silently — they must be ticked, or explicitly waived with a one-line reason.
+Before marking the task complete, walk through the spec's `verification-checklist.md` end-to-end (it sits in this spec's directory — `./verification-checklist.md` from an inline `tasks.md`, `../verification-checklist.md` from a split `tasks/T-NNN.md`). The agent's hand-off summary uses the §8 template from that file. MANDATORY items cannot be skipped silently — they must be ticked, or explicitly waived with a one-line reason.
 
 #### References
 

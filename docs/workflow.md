@@ -50,6 +50,12 @@ The skill definition and templates live in `.claude/skills/spec-development/`. E
 
 The small-spec and hotfix tracks collapse most of these phases (details below).
 
+### Phase 0 — Recon (brownfield only)
+
+If the work touches existing code you did not write — the normal case in contract work or on an inherited service — the skill asks once at spec creation, records `Brownfield: yes` in the epic's Meta, and writes `recon.md` **before** the epic: what exists today on the affected surface, the conventions actually in force, the integration points, what must not be touched and why, and what is missing contrary to expectation. Every claim cites a path or a symbol; an uncited section counts as unfilled, because a recon without citations is a paraphrase of the epic that reads like evidence. The epic then cites `recon.md` instead of restating it.
+
+Greenfield work skips this. The question is asked once and never again.
+
 ### Phase 1 — Brainstorm (optional for small work)
 
 In plain chat, no skill invoked. Describe what you want to build: goal, user, why now, constraints, doubts. The agent challenges assumptions, surfaces hidden requirements, raises risks. The goal of this phase is **alignment on direction**, not wording. No file is produced.
@@ -81,7 +87,11 @@ The epic is a conversation, not a form. Expect back-and-forth.
 
 Read the file end to end. When you are happy with direction, change status in §1 (Meta) to `in-review`. Share with partners if needed. When ready, set it to `approved`.
 
+At the `draft` → `in-review` transition the skill runs a **completeness self-check** and reports the gaps to you as questions. It is deliberately mechanical — the clerical work you skip when reading for intent: a requirement no acceptance criterion covers, a criterion with no observable outcome ("must be fast"), leftover template placeholder text, a surface with no matching §10+ checklist section, an empty Out-of-scope. It is not a second opinion on your intent and it blocks nothing; you decide what to fix. Under `Compliance critical: true` it must run before `approved`, with every gap fixed or written into §22.
+
 The skill refuses to decompose a `draft` epic — scope has not stabilised yet.
+
+**If the epic changes after that**, the skill bumps §1 `Version` and adds a row to §26 Change log — what changed, which tasks it invalidated, why, who approved — **before** regenerating any task. Reviews already had an audit trail (`review.log.md`); this gives the requirements one, so "did the requirement move mid-flight?" has an answer. Under `Compliance critical: true` an epic edited without that row is a halt, not a warning.
 
 ### Phase 4 — Decompose into tasks
 
@@ -119,9 +129,11 @@ The **orchestrator agent** (the session you are talking to) asks which execution
 Then for each wave:
 
 1. Spawns up to 3 **task agents** in parallel (via the Agent tool).
-2. Each task agent executes its task end-to-end: implementation → tests → DoD checklist → hand-off summary.
+2. Each task agent executes its task end-to-end: implementation → tests → DoD checklist → hand-off summary. It **returns** its progress-log row in that hand-off — task agents never edit `plan.md` themselves, because several agents writing one Markdown table is a lost-update race. The orchestrator is the only writer of the Progress log.
 3. After all tasks in the wave complete, orchestrator merges the wave branch and runs automatic review gates.
 4. If mode is `paused-between-waves`, stops and asks before the next wave.
+
+**Status flows bottom-up.** Up to `approved` the epic leads and you set it. After that the tasks do: the first one to start makes the epic `in-progress`, all of them closing makes the plan `completed` and the epic `done`. The orchestrator writes all three and never picks the more flattering value. One combination stops the run and asks you — a task executing while the epic is not yet `approved`, which means work is being built against requirements nobody approved.
 
 At epic end, the orchestrator prints one consolidated hand-off containing all user-required follow-ups (see "Review gates" below).
 
@@ -295,6 +307,7 @@ Both are **Claude Code plugin commands** (`claude-code-plugins/code-review` in p
 | Code review | end of each wave | `code-review` |
 | Security review | wave touches auth / sessions / consent / PII / PHI / payments | `security-review` |
 | **E2E suite (isolated stack)** | end of each wave that changes user-visible flow, API contract, schema, or auth/middleware | the project's E2E command against an isolated test stack (see operating rules below) |
+| DB change review | wave contains a migration or DDL | the project's DB-review skill if one is installed; otherwise the gate is marked `aspirational` and the wave rules below still apply |
 | Architecture review | at epic end, non-trivial epics | prompt-level (dedicated skill to come) |
 
 #### E2E gate — operating rules
@@ -330,7 +343,9 @@ The three axes are orthogonal — any combination is valid:
 
 - **Engine** — *who runs the tasks.* `task-tool` (default; the pre-1.0 one-agent-per-task model) or `dw` (the Workflow tool, for large, highly parallel epics), or `auto` (the skill picks `dw` only when the work is big and parallel enough — ≥ 8 tasks and a wide-enough widest wave). Choosing `dw` has two honest caveats: it needs the Workflow tool to be available (if not, the skill asks or falls back to parallel agents — never silently), and a Workflow run can't pause mid-flight, so each wave is one Workflow call with you approving between waves.
 - **Stop mode** — *when it pauses for you.* `auto` (run straight through), `per-wave` (default; pause after each wave — the old "paused-between-waves"), or `per-task` (pause after every task).
-- **Review** — *adversarial review of each task.* When enabled, after a task is built an independent reviewer subagent gets **only** the spec + the task + the final diff (never the implementer's reasoning or chat history) and tries to **refute** it, returning a structured verdict (PASS / FAIL / NEEDS_REVISION). `fail_action` decides what happens on a non-PASS: `revise` (default — send it back), `halt`, or `flag-only` (record and move on). A hard safety rail: three non-PASS rounds on one task stops the run and asks you to decide — no infinite revision loops.
+- **Review** — *adversarial review of each task.* When enabled, after a task is built an independent reviewer subagent gets **only** five things — the spec, the task, the final diff, the spec's `verification-checklist.md` including its spec-specific §10+ sections, and the implementer's hand-off — and never the implementer's reasoning or chat history. The hand-off arrives as *claims to refute*, not as evidence: a claim the reviewer cannot verify against the diff is itself a finding. It tries to **refute** the result, returning a structured verdict (PASS / FAIL / NEEDS_REVISION). `fail_action` decides what happens on a non-PASS: `revise` (default — send it back), `halt`, or `flag-only` (record and move on). A hard safety rail: three non-PASS rounds on one task stops the run and asks you to decide — no infinite revision loops.
+
+  *Patterns:* `adversarial` reviews every task. `spot-check` reviews only the tasks that earn it — `Risk: high`, or a task whose `Scope paths` touch a checklist §1–§7 surface (persistence, UI, audit, concurrency, E2E, external API, i18n), or `type: infra` — and writes one line into `review.log.md` for every task it skipped, with the reason. That last part matters: a review mode that silently skips work is indistinguishable from a review that found nothing. `none` disables review and is recorded once in the log header.
 
 **Compliance mode.** Set `Compliance critical: true` on a plan and the skill hardens it: the `dw` engine is blocked (override only with `--allow-dw-on-compliance` and a confirmation), and review is forced on as `adversarial` with `flag-only` disallowed. The forced values are written into `review.log.md` so the audit trail shows why they differ from the plan.
 
@@ -371,8 +386,10 @@ Full rules are in `.claude/skills/spec-development/SKILL.md`. Highlights:
 - **Each task must be self-sufficient.** A task agent should not need to read sibling tasks to execute. When a cross-task dependency is unavoidable, the task quotes the interface in its References.
 - **Tests: core scenarios up-front, additional during implementation.** Core scenarios are written at task creation (3–5 flows mapped to acceptance criteria). Additional scenarios are appended by the executing agent as they discover edge cases. Manual verification is the exception — automate by default.
 - **Definition of Done applies globally** (types pass, linter clean, core tests green, additional scenarios documented, i18n covered, a11y passes, manual checklist confirmed, PR references task + epic).
-- **Verification rigour is enforced per task.** Every spec ships with a `verification-checklist.md` (alongside `epic.md`) carrying the 12 universal anti-hand-wave rules (persistence by storage query, audit-row by SQL grep, concurrency by post-condition row count, computed-style not className, image render asserted, etc.) plus project-/spec-specific surfaces. See `.claude/skills/spec-development/SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`.
+- **Verification rigour is enforced per task, on every track.** Every spec ships with a `verification-checklist.md` — full triplet, small spec, and hotfix alike — carrying the 18 universal anti-hand-wave rules `VR-01`…`VR-18` (persistence by storage query, audit-row by storage grep, concurrency by post-condition row count, computed-style not className, image render asserted, exit-code honesty, no silently-skipped layer, domain failure as non-2xx, …) plus project-/spec-specific surfaces. Three tiers: **§0 binds everywhere, no exceptions**; §1–§7 bind on whichever surfaces the change touches; the full file including §10+ is mandatory for a full triplet and optional for the two small shapes. The one concession to incident pressure: on a hotfix the *negative paired test* may be deferred with a named follow-up — the adjacent-configs sweep may not. See `SKILL.md` § "Verification rigour" and `templates/verification-checklist.md`.
 - **Wave-boundary merge.** Tasks in a wave branch from the same base; the wave merges as a unit after all tasks and automated reviews pass.
+- **Schema changes are gated, because a wave rollback does not un-drop a column.** A task carrying destructive DDL (`DROP COLUMN`, `DROP TABLE`, type narrowing, `NOT NULL` on a populated column) is kept out of the same wave as anything depending on it, the down-migration is verified before the wave merges, and the destructive change itself needs your explicit confirmation at merge time — naming what data is lost. Additive migrations (new column, backfill, index) wave normally.
+- **Compliance is declared where the track can carry it.** `Compliance critical` lives in `plan.md` §1 for a full triplet, and in `spec.md` §1 / `hotfix.md` §1 for the two shapes that have no plan. A compliance label in the project's `CLAUDE.md` covers every track and cannot be lowered by a per-spec row — a spec may raise compliance, never waive it.
 - **Failure policy.** One task blocking mid-wave does not halt the wave. Dependent tasks defer to a later wave. If the blocker invalidates the epic, the orchestrator proposes a re-plan.
 
 ---
