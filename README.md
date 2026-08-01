@@ -99,7 +99,7 @@ v1.1 fixes a class of defect an audit of v1.0 exposed: **rules the skill declare
 - **`spot-check` finally does something.** It reviews tasks that are `Risk: high`, touch a §1–§7 surface, or are `type: infra` — and logs every skip with a reason.
 - **Destructive DDL is gated at the wave boundary**, because reverting a wave does not un-drop a column.
 - **One writer for the progress log, one source of truth for status.** Divergence stops and asks instead of being silently resolved.
-- **Brownfield recon (Phase 0)** for work in code you didn't write, and a mechanical completeness self-check on the epic before decomposition.
+- **Brownfield recon (Phase 0)** for work in code you didn't write, and a mechanical completeness self-check on the epic before decomposition — its two literal checks ship as commands whose output gets pasted, the three semantic ones stay a read.
 
 Upgrading an installed copy: `~/.claude/skills/spec-development/` is a **copy**, not a link — re-run the install command after pulling, or symlink it to the repo, or the agent keeps reading the old contract.
 

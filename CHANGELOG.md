@@ -5,7 +5,7 @@ All notable changes to the `spec-development` skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] — 2026-07-30
+## [1.1.0] — 2026-08-01
 
 Contract-integrity release. An audit of 1.0 read the skill as a *system of cross-references* for the first time and found rules that were declared in one file, defined in a second, and enforced by an agent that received neither. **No existing `epic.md` / `spec.md` / `tasks.md` / `plan.md` becomes invalid**; new sections are additive and the one rename keeps its aliases.
 
@@ -26,7 +26,7 @@ Contract-integrity release. An audit of 1.0 read the skill as a *system of cross
 - **Claims framing for the reviewer** — read the diff and reach a verdict *before* reading the hand-off; treat it as assertions to disprove; a claim not independently verifiable from the diff is itself a finding of severity `major` or higher.
 - **`epic.md` §26 Change log / `small-spec.md` §10** — an audit trail for the requirements, the counterpart to `review.log.md` for the reviews. A re-plan bumps `Version` and writes the row before regenerating tasks; under `Compliance critical: true` a missing row is a halt.
 - **Destructive-DDL gate** — a task carrying `DROP COLUMN` / `DROP TABLE` / type narrowing / `NOT NULL`-on-populated does not share a wave with its dependents, its down-migration is verified before merge, and the change needs explicit confirmation *at merge time* naming what data is lost. A `DB change review` gate row invokes the project's DB-review skill **if one is installed** and is marked `aspirational` otherwise — no specific skill is named anywhere (the 1.0.1 portability precedent).
-- **Epic completeness self-check** at `draft` → `in-review` — mechanical only: uncovered requirements, criteria with no observable outcome, leftover placeholder text, surfaces with no §10+ section, empty Out-of-scope. Reported as questions, blocks nothing outside compliance mode.
+- **Epic completeness self-check** at `draft` → `in-review` — mechanical only: uncovered requirements, criteria with no observable outcome, leftover placeholder text, surfaces with no §10+ section, empty Out-of-scope. Reported as questions, blocks nothing outside compliance mode. Two of the five checks look for literal strings and **ship as commands whose real output must be pasted**, not as prose for the agent to interpret; the other three are semantic (does this criterion actually cover that requirement?) and stay a read — a parser can only check that identifiers co-occur, which is a different question.
 - **Brownfield recon (Phase 0)** — `templates/recon.md`, written before the epic when the work touches code the author did not write. Every claim cites a path or symbol; an uncited section counts as unfilled.
 - **Status ownership** — `epic.md` §1 (or `spec.md` §1) is the single source of truth; the statuses in `tasks.md` / `plan.md` are derived. Divergence stops and asks rather than being silently aligned.
 - **Compliance declaration site for plan-less tracks** — `spec.md` §1 / `hotfix.md` §1. A `CLAUDE.md` compliance label covers every track and cannot be lowered by a per-spec row.
