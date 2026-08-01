@@ -31,6 +31,9 @@ How to use:
 - [ ] **MANDATORY — Exit-code honesty (`VR-15`).** A multi-step run's "green" is read from each step's own result, not the exit code of the last command in a pipe / a trailing `grep`/`tail`. A backgrounded "exit 0" is not proof — read the artefact/log the run produced.
 - [ ] **MANDATORY — No un-gated or silently-skipped layers (`VR-16`).** Every test layer that matters runs in the gate; a self-skipped test without a `BUG-NNN` reference is rot, not a pass. A layer that can't run here is surfaced at hand-off, not dropped.
 - [ ] **MANDATORY — Domain failure surfaces as non-2xx (`VR-18`).** Any domain/business failure the task can produce returns 4xx/5xx, never a 2xx with an error body. A `200` with `status:"failed"` is a green that lies.
+- [ ] *contextual* **Reproducible from scratch (`VR-12`).** The hand-off's "Reproduce the green state" block carries the exact commands and expected output — commit, branch, env. "Works on my machine" closes nothing.
+- [ ] *contextual* **Live exercise for infra / deployment work (`VR-13`).** Paper validation (linter, config-validate, dry-run) proves syntax, not behaviour. A task whose deliverable is infrastructure stays `done-paper` until a smoke target returns green from a real deploy.
+- [ ] *contextual* **Idempotent setup scripts (`VR-14`).** A bootstrap / migration / provisioning script detects its own re-run state at every mutating step. Tested by running it twice in succession.
 - [ ] **PR description references the task ID and SPEC-NNN.**
 - [ ] **Hand-off summary uses the §8 template at the bottom of this file.**
 
@@ -168,7 +171,7 @@ Copy this template and fill it in for the orchestrator. Anything missing means t
 - VR-18 (domain failure surfaces as non-2xx): ✅ / n/a — <no HTTP surface>
 
 **Waiver rules — read before writing `⚠️ waived` or `n/a`:**
-- `⚠️ waived` is available **only** on the lines above that offer it (`VR-05`, `VR-06`, `VR-10`). The other rules are tagged MANDATORY on at least one surface family: if you touched that surface they must be `✅`; if you did not, use `n/a` with the reason. `VR-15` and `VR-16` are always `✅` — a task that ran anything read its results honestly and skipped no layer.
+- `⚠️ waived` is available **only** on the lines above that offer it (`VR-05`, `VR-06`, `VR-10`). Every other rule is either tagged MANDATORY on a surface family (`VR-01`–`VR-04`, `VR-07`–`VR-09`, `VR-11`, `VR-17`, `VR-18`) or *contextual* in §0 (`VR-12`–`VR-14`): if the task touches that surface it must be `✅`; if it does not, use `n/a` with the reason. `VR-15` and `VR-16` are always `✅` — a task that ran anything read its results honestly and skipped no layer.
 - A waived MANDATORY item is a `waiver-abuse` finding of severity **critical** at review, not a judgement call.
 - Every `n/a` and every waiver states **why the rule is inapplicable to this diff** — which surface you did not touch, or which precondition does not hold. "Inconvenient", "out of scope", "no time", and a bare `n/a` with no reason are all rejected: the reviewer verifies each one against the diff, and a reason the diff contradicts is a `waiver-abuse` finding.
 

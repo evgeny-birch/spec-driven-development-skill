@@ -80,7 +80,7 @@ Checks 3 and 5 are literals — **run** these and paste the real output (`VR-15`
 
 ```
 grep -nE '\{NNN\}|\{name|\{slug\}|\{title|\{link|\| YYYY-MM-DD|Lorem ipsum|Delete (these instructions|this block|the "How)' epic.md   # → nothing
-sed -n '/^## 21\./,/^## 22\./p' epic.md | grep -c '^- '                                                # → > 0
+sed -n '/^## 21\./,/^## 22\./p' epic.md | grep -c '^- [^.]'                                            # → > 0
 ```
 
 Nothing here blocks: the author decides what to fix. Under `Compliance critical: true` it must have been run before `approved`, with each gap either fixed or recorded as a row in §22 Open questions.
@@ -331,7 +331,7 @@ Every spec MUST author a `verification-checklist.md` in its directory (alongside
 - **§1–§7 surface families** — bind on whichever tracks and tasks touch that surface (persistence, UI, audit, concurrency, E2E, external API, i18n). Untouched surface ⇒ `n/a` with the reason, not silence.
 - **The full file including §10+** — mandatory for full-triplet; optional for small-spec and hotfix (still recommended: copying the template costs five minutes).
 
-*Hotfix carve-out.* Of the ten §0 items exactly **one** may be deferred under incident pressure — the **negative paired test** — and only with a §8 line naming where the follow-up is tracked. The **adjacent-configs sweep stays mandatory on every track**: it is a grep, and a hurried fix that renames one env var and misses the other four places is the classic hotfix regression. No other §0 item is deferrable anywhere.
+*Hotfix carve-out.* Of the §0 items exactly **one** may be deferred under incident pressure — the **negative paired test** — and only with a §8 line naming where the follow-up is tracked. The **adjacent-configs sweep stays mandatory on every track**: it is a grep, and a hurried fix that renames one env var and misses the other four places is the classic hotfix regression. No other §0 item is deferrable anywhere.
 
 ## Plan execution
 
@@ -344,7 +344,7 @@ The user should NOT have to coordinate agents — the orchestrator does it.
 
 **Progress log has one writer.** The orchestrator writes `plan.md` §11 after accepting a hand-off. Task agents never write it — up to `Concurrency cap` agents editing one Markdown table in one file is a lost-update race with no owner.
 
-**Status ownership.** `epic.md` §1 `Status` (small-spec: `spec.md` §1 `Status`) is the **single source of truth**. The `Status` fields in `tasks.md` and `plan.md` are derived views, maintained by the orchestrator. On a detected divergence the orchestrator **stops and asks** — it does not silently align them, and it does not adopt the more optimistic value. (Same rule already applied to unrecognised execution rows: don't guess.)
+**Status ownership.** `epic.md` §1 `Status` (small-spec: `spec.md` §1) is the **single source of truth for the spec's lifecycle**. `plan.md` and `tasks.md` track *execution*, which is different information on a different enum — they are not a function of the epic's status and no mapping is implied. The orchestrator maintains them, and stops to ask on a **contradiction**, which means exactly this: execution claims progress the lifecycle denies (`plan.md` `in-progress`/`completed`, or any task past `not-started`, while the epic is still `draft`/`in-review`), or the epic claims `done` while any task is not `completed`. Anything else is not a divergence. It never silently aligns them and never adopts the more optimistic value.
 
 ### Concurrency cap
 
@@ -388,7 +388,7 @@ It must **not** receive the implementer's reasoning, intermediate tool calls, co
 Its primary instruction is `templates/reviewer-instructions.md` — **`SKILL.md` is NOT loaded for the reviewer**, which is why every rule it must apply is written out in that file or arrives as one of the five inputs. The firewall itself is largely free: a freshly spawned subagent starts without the implementer's context.
 
 **Per engine:**
-- **Task tool** — after the implementation Agent call, the orchestrator makes a second `Agent` call for the reviewer, prompt = `reviewer-instructions.md` + the three inputs, and (for structured output) instructs the exact `review-verdict-template.md` format.
+- **Task tool** — after the implementation Agent call, the orchestrator makes a second `Agent` call for the reviewer, prompt = `reviewer-instructions.md` + the five inputs above, and (for structured output) instructs the exact `review-verdict-template.md` format.
 - **`dw`** — the reviewer is a pipeline stage: `agent(reviewerPrompt, {agentType: 'reviewer', schema: VERDICT})`. `agentType` loads `reviewer-instructions.md`; `schema` validates the verdict at the tool-call layer.
 
 **Verdict** — structured (`review-verdict-template.md`): `PASS` / `FAIL` / `NEEDS_REVISION` + findings (`severity` critical/major/minor, `category` spec-deviation/silent-failure/acceptance-miss/quality/test-gap/waiver-abuse, `suggested_action`). Categories are tied to `verification-checklist.md` MANDATORY items + the §"Verification rigour" rules — one anti-hand-wave system, not two. `waiver-abuse` covers the one place an agent may legally declare a rigour rule inapplicable: every waiver and every `n/a` in the hand-off is verified against the diff. Append every round to `review.log.md` (header from `review-log-template.md`).
@@ -399,7 +399,7 @@ Its primary instruction is `templates/reviewer-instructions.md` — **`SKILL.md`
 
 **Compliance mode.** Declared in `plan.md` §1 — or, on the two tracks that have no `plan.md`, in `spec.md` §1 (small-spec) / `hotfix.md` §1 (hotfix) — or by a project `CLAUDE.md` compliance label. A `CLAUDE.md` label covers **every** track and a per-spec row cannot lower it: a spec may raise compliance, never waive it.
 
-Evaluate **before engine dispatch**: (1) `dw` is **blocked** — override only via `--allow-dw-on-compliance`, which triggers an explicit confirmation prompt (decline ⇒ halt); (2) `Review enabled` is forced `true`; (3) `Review pattern` is forced `adversarial`; (4) `Review fail action: flag-only` is rejected (must be `revise`/`halt`); (5) an epic modified without a §26 Change-log row is a **halt**, not a warning, and the row is mirrored into `review.log.md` on the next run; (6) the epic completeness self-check must have been run before `approved`, with every gap fixed or recorded in §22 Open questions. These forced values are logged in the `review.log.md` header so the audit trail shows why they differ from `plan.md`.
+Evaluate **before engine dispatch**: (1) `dw` is **blocked** — override only via `--allow-dw-on-compliance`, which triggers an explicit confirmation prompt (decline ⇒ halt); (2) `Review enabled` is forced `true`; (3) `Review pattern` is forced `adversarial`; (4) `Review fail action: flag-only` is rejected (must be `revise`/`halt`); (5) an epic modified without a §26 Change-log row is a **halt**, not a warning, and the row is mirrored into `review.log.md` on the next run; (6) the epic completeness self-check must have been run before `approved`, with every gap fixed or recorded in §22 Open questions. **On the hotfix track** (no epic, no `approved` state) clauses 5–6 do not apply, and clauses 2–3 deliberately override this track's default of no automatic review — that is the point of declaring a hotfix compliance-critical. These forced values are logged in the `review.log.md` header so the audit trail shows why they differ from `plan.md`.
 
 ### Merge strategy
 
@@ -547,9 +547,9 @@ Both are surfaced in the orchestrator's epic-end hand-off; do not let the person
 │   │   │   └── tasks/T-NNN-{slug}.md    ← one file per task (see "Splitting tasks into files")
 │   │   ├── SPEC-003-{slug}/         ← small spec (one file)
 │   │   │   ├── spec.md
-│   │   │   └── verification-checklist.md   ← optional but recommended
+│   │   │   └── verification-checklist.md   ← §0 binds here too; copied at creation
 │   │   └── HF-001-{slug}/           ← hotfix (one file)
-│   │       └── hotfix.md            ← verification-checklist.md optional
+│   │       └── verification-checklist.md ← §0 binds here too (one item deferrable)
 │   ├── bugs/                        ← created lazily on the first BUG
 │   │   ├── README.md                ← convention (from bugs-readme.md template)
 │   │   ├── _template.md             ← per-bug template (from bug.md template)

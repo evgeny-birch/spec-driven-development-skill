@@ -34,7 +34,7 @@ Contract-integrity release. An audit of 1.0 read the skill as a *system of cross
 
 ### Changed
 - Verification-rigour rules carry a single identifier `VR-01`…`VR-18`. `HR-1`..`HR-4` remain as one alias line — existing specs referencing them still resolve.
-- `SKILL.md` no longer restates the nine hand-off slots; the §8 template is the single source. Net growth across the whole release: **+53 lines** (525 → 578), inside a hard 60-line budget — every rule added to a prose contract lowers adherence to the rest, so additions had to pay for themselves by deleting duplication.
+- `SKILL.md` no longer restates the nine hand-off slots; the §8 template is the single source. Net growth across the whole release: **+59 lines** (525 → 584), inside a hard 60-line budget — every rule added to a prose contract lowers adherence to the rest, so additions had to pay for themselves by deleting duplication.
 
 ## [1.0.1] — 2026-07-23
 
