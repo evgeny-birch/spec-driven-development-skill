@@ -331,6 +331,8 @@ Every spec MUST author a `verification-checklist.md` in its directory (alongside
 - **§1–§7 surface families** — bind on whichever tracks and tasks touch that surface (persistence, UI, audit, concurrency, E2E, external API, i18n). Untouched surface ⇒ `n/a` with the reason, not silence.
 - **The full file including §10+** — mandatory for full-triplet; optional for small-spec and hotfix (still recommended: copying the template costs five minutes).
 
+*Pre-1.1 specs.* A spec directory created before 1.1 may carry no `verification-checklist.md` at all (small-spec / hotfix, where the copy step did not exist) or one whose §8 reports 12 rules instead of 18. When picking such a spec up, refresh it from `templates/verification-checklist.md` before the first hand-off — the rules are the floor; the copy in the spec directory is only a copy. Nothing else in a pre-1.1 spec needs changing.
+
 *Hotfix carve-out.* Of the §0 items exactly **one** may be deferred under incident pressure — the **negative paired test** — and only with a §8 line naming where the follow-up is tracked. The **adjacent-configs sweep stays mandatory on every track**: it is a grep, and a hurried fix that renames one env var and misses the other four places is the classic hotfix regression. No other §0 item is deferrable anywhere.
 
 ## Plan execution
@@ -543,18 +545,16 @@ Both are surfaced in the orchestrator's epic-end hand-off; do not let the person
 │   │   │   ├── verification-checklist.md
 │   │   │   ├── review.log.md        ← only when review is enabled for a run
 │   │   │   └── recon.md             ← only for brownfield specs (Phase 0, written before the epic)
-│   │   ├── SPEC-002-{slug}/         ← same triplet; with >10 tasks, tasks.md is an index only
-│   │   │   └── tasks/T-NNN-{slug}.md    ← one file per task (see "Splitting tasks into files")
 │   │   ├── SPEC-003-{slug}/         ← small spec (one file)
 │   │   │   ├── spec.md
 │   │   │   └── verification-checklist.md   ← §0 binds here too; copied at creation
 │   │   └── HF-001-{slug}/           ← hotfix (one file)
+│   │       ├── hotfix.md
 │   │       └── verification-checklist.md ← §0 binds here too (one item deferrable)
 │   ├── bugs/                        ← created lazily on the first BUG
 │   │   ├── README.md                ← convention (from bugs-readme.md template)
 │   │   ├── _template.md             ← per-bug template (from bug.md template)
-│   │   ├── BUG-001-{slug}.md
-│   │   └── BUG-002-{slug}.md
+│   │   └── BUG-001-{slug}.md
 │   ├── future-work.md               ← created lazily on the first deferral (from future-work.md template)
 │   └── prod-readiness.md            ← created lazily on the first pre-prod step (from prod-readiness.md template)
 ```

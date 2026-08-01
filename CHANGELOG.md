@@ -32,6 +32,12 @@ Contract-integrity release. An audit of 1.0 read the skill as a *system of cross
 - **Compliance declaration site for plan-less tracks** — `spec.md` §1 / `hotfix.md` §1. A `CLAUDE.md` compliance label covers every track and cannot be lowered by a per-spec row.
 - New templates: `future-work.md`, `prod-readiness.md`, `recon.md`.
 
+### Backward compatibility
+Nothing to migrate, and nothing becomes invalid. Verified against two pre-1.1 specs in this repo:
+- `HR-1..HR-4` references in an existing spec still resolve, via the alias line.
+- New sections (`epic.md` §26, `small-spec.md` §7.5 / §10, the `Brownfield` and `Compliance critical` Meta rows) are additive — a spec without them is not in error, and `§26` is required only when an epic *changes*.
+- **One thing to do when picking up a pre-1.1 spec:** it may carry no `verification-checklist.md` (small-spec / hotfix, where the copy step did not exist before 1.1) or one whose §8 reports 12 rules instead of 18. Refresh it from the template before the first hand-off. The rules are the floor; the copy in the spec directory is only a copy.
+
 ### Changed
 - Verification-rigour rules carry a single identifier `VR-01`…`VR-18`. `HR-1`..`HR-4` remain as one alias line — existing specs referencing them still resolve.
 - `SKILL.md` no longer restates the nine hand-off slots; the §8 template is the single source. Net growth across the whole release: **+59 lines** (525 → 584), inside a hard 60-line budget — every rule added to a prose contract lowers adherence to the rest, so additions had to pay for themselves by deleting duplication.
